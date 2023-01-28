@@ -35,7 +35,7 @@ class Bool:
 
 # Defined binary operators in the Language
 BINARY_OPERATORS = [
-                    "+", "/", "-", "//", "*", "%", "^", "-"     # Binary operators for numbers
+                    "+", "/", "-", "//", "*", "%", "^", "-",     # Binary operators for numbers
                     "<<", ">>", "&", "|",                       # Bitwise binary operators for numbers
                     "<=", "<", ">", ">=", "==", "~=",           # Binary operators for Number types(similar)
                     "&&", "||"                                  # Binary operators for Booleans

@@ -35,10 +35,10 @@ class Bool:
 
 # Defined binary operators in the Language
 BINARY_OPERATORS = [
-                    "+", "/", "-", "//", "*", "%", "^", "-",     # Binary operators for numbers
+                    "+", "/", "-", "//", "*", "%", "^", "-",    # Binary operators for numbers
                     "<<", ">>", "&", "|",                       # Bitwise binary operators for numbers
                     "<=", "<", ">", ">=", "==", "~=",           # Binary operators for Number types(similar)
-                    "&&", "||"                                  # Binary operators for Booleans
+                    "&&", "||", '='                             # Binary operators for Booleans
 ]
 
 # Defined unary operators in the language
@@ -121,9 +121,25 @@ class UnOp:
     def checkType(operator, operand, operandType):
         if (not isinstance(operand, operandType)):
             UnOp.raiseTypeError(operator, operand)
+@dataclass
+class none:
+    noval: None
 
 
-AST = Variable|BinOp|Bool|Int|Float|Let|If|UnOp
+@dataclass
+class Var:
+    varia: Variable
+    assignval: 'AST' = none
+
+@dataclass
+class PRINT:
+    left: 'AST'
+    right: 'AST'
+    sep: str=' '
+
+
+
+AST = Variable|BinOp|Bool|Int|Float|Let|If|UnOp|Var|none|PRINT
 # Defining a Number as both an integer as  well as Float
 Number = Float|Int
 
@@ -153,7 +169,8 @@ def evaluate(program: AST, environment: Dict[str,Variable] = {}):
         case BinOp(operator, firstOperand, secondOperand):
             
             secondOperand = evaluate(secondOperand, environment)
-            firstOperand = evaluate(firstOperand, environment)
+            if(operator != "="):
+                firstOperand = evaluate(firstOperand, environment)
 
             if (operator not in BINARY_OPERATORS):
                 InvalidProgram(Exception(f"Operator {operator} not reconized"))
@@ -265,6 +282,9 @@ def evaluate(program: AST, environment: Dict[str,Variable] = {}):
                 case "||":
                     BinOp.checkType(operator, firstOperand, secondOperand, Bool, Bool)
                     return Bool(firstOperand.value or secondOperand.value)
+                case "=":
+                    BinOp.checkType(operator, firstOperand, secondOperand, Variable, AST)
+                    return evaluate(Var(firstOperand, secondOperand),environment)
 
 
         case UnOp(operator, operand):
@@ -298,10 +318,22 @@ def evaluate(program: AST, environment: Dict[str,Variable] = {}):
                     return evaluate(elseBlock)
                 else:
                     return Bool(False)
-        
-        # Handling unknown expressions
+        case Var(varia, assignval):
+            if(type(assignval)==BinOp or type(assignval)==UnOp or type(assignval)==Let or type(assignval)==If):
+                environment[varia.name]= evaluate(assignval, environment)
+            else:
+                environment[varia.name]= assignval
+            return environment[varia.name]
+        case PRINT(left, right, end):
+            a=evaluate(left,environment)
+            if(a!=None):
+                print(a.value, end=end)
+            b=evaluate(right, environment)
+            if(b!=None):
+                print(b.value, end=end)
+            return
+        #Handling unknown expressions
         case _:
-            InvalidProgram(Exception("Expression Invalid"))
-
+           InvalidProgram(Exception("Expression Invalid"))
 
 

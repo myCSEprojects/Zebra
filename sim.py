@@ -85,7 +85,25 @@ class str_concat:
     Right : 'AST'
 
 
+@dataclass
+class Loop:
+    '''
+    loop(variable,steps,block)
+    '''
+    var: Variable
+    steps: 'AST'
+    block: 'AST'
 
+
+@dataclass
+class While:
+    '''
+    while loop
+    '''
+    condition: 'AST'
+    block: 'AST'
+    
+    
 
 @dataclass
 class BinOp:
@@ -155,7 +173,7 @@ class Seq:
     left: 'AST'
     right:'AST'
 
-AST = Variable|BinOp|Bool|Int|Float|Let|If|UnOp|Str|str_concat|Slice|none|PRINT
+AST = Variable|BinOp|Bool|Int|Float|Let|If|UnOp|Str|str_concat|Slice|none|PRINT|Seq
 # Defining a Number as both an integer as  well as Float
 Number = Float|Int
 
@@ -391,6 +409,26 @@ def evaluate(program: AST, environment: Dict[str,Variable] = None):
             l=evaluate(left, environment)
             r=evaluate(right, environment)
             return r
+        case Loop(Variable(var),steps,block) :
+            steps = evaluate(steps,environment)
+            environment = environment | {var:steps}
+            if (steps == Int(0)) :
+                return Bool(False)
+            else :
+##                print("Iterations", steps.value)
+                environment[var] = steps
+                evaluate(block,environment)
+                return evaluate(Loop(Variable(var),BinOp("-",steps,Int(1)), block),environment)
+
+        case While(condition,block) :
+            evaluated_condition = evaluate(condition,environment)
+            if (not isinstance(evaluated_condition, Bool)):
+                InvalidProgram(Exception(f"The condition {condition} does not evaluate to a boolean type"))
+            if (evaluated_condition.value):
+                evaluate(block,environment)
+                return evaluate(While(condition,block),environment)
+            else :
+                return Bool(False)
 
     
         # Handling unknown expressions

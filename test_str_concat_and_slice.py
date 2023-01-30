@@ -1,3 +1,5 @@
+from sim import *
+
 def test():
 
     print("Strings test cases:")
@@ -11,3 +13,5 @@ def test():
     if (evaluate(BinOp('*',Str('abc'),Int(3)))).value == 'abcabcabc':
         print("Test 3/3 Passed")
         
+if (__name__ == "__main__"):
+    test()

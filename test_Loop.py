@@ -1,6 +1,7 @@
 from sim import *
 
 def test() :
+    #test case 1
     x = Variable('x')
     y = Variable('y')
     environment = {'y':Int(0)}
@@ -15,9 +16,9 @@ def test() :
         print("Loop is failed")
         exit()
 
-    print("Test case 1 passed")
+##    print("Test case 1 passed")
 
-
+     #test case 2
     steps_ = BinOp('+', Int(10), Int(20))
     e11 = BinOp('-',x,x)
     e2 = Loop(x,steps_,e11)
@@ -29,9 +30,9 @@ def test() :
         print("Loop is failed")
         exit()
 
-    print("Test case 2 passed")
+##    print("Test case 2 passed")
     
-
+     #test case 3
     i = Variable('i')
     environment = {'i':Int(7)}
 
@@ -46,8 +47,8 @@ def test() :
     if l != Bool(False) :
         print("While loop is failed")
         exit()
-    print("Test case 3 passed")
-
+##    print("Test case 3 passed")
+     #test case 4
     i = Variable('i')
     environment = {'i':Int(0)}
 
@@ -62,7 +63,19 @@ def test() :
     if l != Bool(False) :
         print("While loop is failed")
         exit()
-    print("Test case 4 passed")
+##    print("Test case 4 passed")
+
+     #test case 5
+    a = Variable('a')
+    
+    e2 = BinOp('=',a,Int(1))
+    e1 = BinOp('<',a,Int(5))
+    e21 = BinOp('+',a,Int(1))
+    e11 = BinOp('=',a,e21)
+
+    l = evaluate(Seq(e2,While(e1,Seq(PRINT(a,Str("")),e11))))
+
+    print()
 
     print("All test cases passed")
     

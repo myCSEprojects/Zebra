@@ -49,7 +49,7 @@ BINARY_OPERATORS = [
                     "+", "/", "-", "//", "*", "%", "^", "-",     # Binary operators for numbers
                     "<<", ">>", "&", "|",                       # Bitwise binary operators for numbers
                     "<=", "<", ">", ">=", "==", "~=",           # Binary operators for Number types(similar)
-                    "&&", "||"                                  # Binary operators for Booleans
+                    "&&", "||"  , "="                                # Binary operators for Booleans
 ]
 
 # Defined unary operators in the language
@@ -83,6 +83,7 @@ class str_concat:
     #function to concat the strings passed as an argument list
     Left : 'AST'
     Right : 'AST'
+
 
 
 
@@ -140,19 +141,34 @@ class UnOp:
     def checkType(operator, operand, operandType):
         if (not isinstance(operand, operandType)):
             UnOp.raiseTypeError(operator, operand)
+@dataclass
+class none:
+    noval: None
 
+@dataclass
+class PRINT:
+    left: 'AST'
+    right: 'AST'
+    sep: str=' '
+@dataclass
+class Seq:
+    left: 'AST'
+    right:'AST'
 
-AST = Variable|BinOp|Bool|Int|Float|Let|If|UnOp|Str|str_concat|Slice
+AST = Variable|BinOp|Bool|Int|Float|Let|If|UnOp|Str|str_concat|Slice|none|PRINT
 # Defining a Number as both an integer as  well as Float
 Number = Float|Int
 
 def InvalidProgram(exception ) -> None:
     raise exception
 
-def evaluate(program: AST, environment: Dict[str,Variable] = {}):
+def evaluate(program: AST, environment: Dict[str,Variable] = None):
     '''
     Evaluates the given AST
     '''
+    if (environment == None):
+        environment = {}
+
     match program:
         case Variable(name):
             if (name in environment):
@@ -175,7 +191,8 @@ def evaluate(program: AST, environment: Dict[str,Variable] = {}):
         case BinOp(operator, firstOperand, secondOperand):
             
             secondOperand = evaluate(secondOperand, environment)
-            firstOperand = evaluate(firstOperand, environment)
+            if(operator != "="):
+                firstOperand = evaluate(firstOperand, environment)
 
             if (operator not in BINARY_OPERATORS):
                 InvalidProgram(Exception(f"Operator {operator} not reconized"))
@@ -304,7 +321,11 @@ def evaluate(program: AST, environment: Dict[str,Variable] = {}):
                 case "||":
                     BinOp.checkType(operator, firstOperand, secondOperand, Bool, Bool)
                     return Bool(firstOperand.value or secondOperand.value)
-
+                case "=":
+                    BinOp.checkType(operator, firstOperand, secondOperand, Variable, AST)
+                    secondOperand = evaluate(secondOperand, environment)
+                    environment[firstOperand.name]= secondOperand
+                    return secondOperand
 
         case UnOp(operator, operand):
             operand = evaluate(operand, environment)
@@ -356,10 +377,22 @@ def evaluate(program: AST, environment: Dict[str,Variable] = {}):
             if (first>second or first < 0 or second > len(elem.value)):
                 InvalidProgram(Exception("Invalid index"))
             return Str(elem.value[first:second])
-            
-            
-                
         
+        case PRINT(left, right, end):
+            a=evaluate(left,environment)
+            if(a!=None):
+                print(a.value, end=end)
+            b=evaluate(right, environment)
+            if(b!=None):
+                print(b.value, end=end)
+            return
+
+        case Seq(left, right):
+            l=evaluate(left, environment)
+            r=evaluate(right, environment)
+            return r
+
+    
         # Handling unknown expressions
         case _:
             InvalidProgram(Exception("Expression Invalid"))

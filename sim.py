@@ -33,6 +33,17 @@ class Bool:
     '''
     value: bool
 
+@dataclass
+class Str :
+    value: str
+
+@dataclass
+class Slice:
+    value : 'AST' 
+    first : Int 
+    second : Int 
+
+
 # Defined binary operators in the Language
 BINARY_OPERATORS = [
                     "+", "/", "-", "//", "*", "%", "^", "-",     # Binary operators for numbers
@@ -68,6 +79,14 @@ class If:
     elseBlock: 'AST'
 
 @dataclass
+class str_concat:
+    #function to concat the strings passed as an argument list
+    Left : 'AST'
+    Right : 'AST'
+
+
+
+@dataclass
 class BinOp:
     '''
     Variable evaluting to the value of the binary operation
@@ -75,7 +94,7 @@ class BinOp:
     operator: str
     firstOperand: 'AST'
     secondOperand: 'AST'
-    
+
     def implicitIntToFloat(firstOperand, secondOperand):
         '''
         Function to take of the implicit conversion of the both operands to Float if either of them is a Float
@@ -86,7 +105,7 @@ class BinOp:
             elif (isinstance(secondOperand, Int)):
                 secondOperand = Float(secondOperand.value)
         return firstOperand, secondOperand
-    
+
     @staticmethod
     def raiseTypeError(operator, firstOperand, secondOperand):
         raise Exception(f"Operator {operator} not defined for operands of type {type(firstOperand)} and {type(secondOperand)}.")
@@ -123,7 +142,7 @@ class UnOp:
             UnOp.raiseTypeError(operator, operand)
 
 
-AST = Variable|BinOp|Bool|Int|Float|Let|If|UnOp
+AST = Variable|BinOp|Bool|Int|Float|Let|If|UnOp|Str|str_concat|Slice
 # Defining a Number as both an integer as  well as Float
 Number = Float|Int
 
@@ -150,6 +169,9 @@ def evaluate(program: AST, environment: Dict[str,Variable] = {}):
         case Bool(value):
             return program
 
+        case Str(value):
+            return program
+
         case BinOp(operator, firstOperand, secondOperand):
             
             secondOperand = evaluate(secondOperand, environment)
@@ -160,8 +182,14 @@ def evaluate(program: AST, environment: Dict[str,Variable] = {}):
             
             match operator:
                 case "+":
-                    BinOp.checkType(operator, firstOperand, secondOperand, Number, Number)
                     
+                    # #for strings starts
+                    # if (isinstance(firstOperand, Str) and isinstance(secondOperand, Str)):
+                    #     return Str(firstOperand.value + secondOperand.value)
+                    # #for strings ends
+                    
+                    BinOp.checkType(operator, firstOperand, secondOperand, Number, Number)
+
                     firstOperand, secondOperand = BinOp.implicitIntToFloat(firstOperand, secondOperand)
                     
                     if (isinstance(firstOperand, Float)):
@@ -187,6 +215,17 @@ def evaluate(program: AST, environment: Dict[str,Variable] = {}):
                     return Float(firstOperand.value / secondOperand.value)
                 
                 case "*":
+                    # for strings starts
+                    second_type = isinstance(secondOperand,int) or isinstance(secondOperand,Int)
+                    first_type = isinstance(firstOperand,int) or isinstance(firstOperand,Int)
+                    
+                    if (isinstance(firstOperand,Str) and second_type):
+                        return Str(firstOperand.value * secondOperand.value)
+
+                    if (first_type and isinstance(secondOperand,Str)):
+                        return Str(firstOperand.value * secondOperand.value)
+                    #for string ends
+
                     BinOp.checkType(operator, firstOperand, secondOperand, Number, Number)
                     
                     firstOperand, secondOperand = BinOp.implicitIntToFloat(firstOperand, secondOperand)
@@ -294,14 +333,34 @@ def evaluate(program: AST, environment: Dict[str,Variable] = {}):
             if (evaluated_condition.value):
                 return evaluate(ifBlock)
             else:
-                if (elseBlock != None):
+                if (elseBlock != None): 
                     return evaluate(elseBlock)
                 else:
                     return Bool(False)
+
+        case str_concat(left,right):
+            
+            elem1 = evaluate(left)
+            elem2 = evaluate(right)
+            if (not(isinstance(elem1,Str) and isinstance(elem2,Str))):
+                InvalidProgram(Exception("Arguments passed to str_concat() must be of 'Str' type"))
+            return Str(elem1.value+elem2.value)
+
+
+        case Slice(value_, first, second):
+            elem = evaluate(value_)
+
+            if (not (isinstance(elem,Str))):
+                InvalidProgram(Exception("Arguments passed to Slice() must be of 'Str' type"))
+            
+            if (first>second or first < 0 or second > len(elem.value)):
+                InvalidProgram(Exception("Invalid index"))
+            return Str(elem.value[first:second])
+            
+            
+                
         
         # Handling unknown expressions
         case _:
             InvalidProgram(Exception("Expression Invalid"))
-
-
 

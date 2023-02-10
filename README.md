@@ -9,6 +9,7 @@
 
 `Bool`: Boolean data types representing `{'true', 'false'}`
 
+---
 ## Operators
 
 ### Binary Arithematic Operators
@@ -184,7 +185,7 @@
 
     $$(Bool) \&\& (Bool) \rightarrow Bool$$
 
-17. `||` : Logical OR operator 
+18. `||` : Logical OR operator 
 
     **Operands**: a (`Bool`), b (`Bool`)
 
@@ -194,7 +195,7 @@
 
 ### Unary arithematic Operators
 
-18. `-` : arithematic negation operator
+19. `-` : arithematic negation operator
 
     **Operands**: a (`Float|Int`)
 
@@ -205,7 +206,7 @@
 
 ### Unary Logical Operators
 
-19. `-` : Logical negation operator
+20. `-` : Logical negation operator
 
     **Operands**: a (`Bool`)
 

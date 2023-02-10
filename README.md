@@ -1,1 +1,220 @@
-# Compilers-2023
+
+# Language specifications
+
+## Data Types
+
+`Int`: Interger data type representing whole numbers
+
+`Float`: Floating point numbers stored in form of Fractions $(\dfrac{p}{q}:p, q \in Q)$.
+
+`Bool`: Boolean data types representing `{'true', 'false'}`
+
+## Operators
+
+### Binary Arithematic Operators
+
+1.  `+` : Addition operator 
+    
+    **Operands**: a (`Int|Float`), b (`Int|Float`)
+
+    **Returns**: (`Float|Int`) - Sum of `Numbers` a and b
+
+    The operator takes care of implicit `Int` to `Float` conversions in case of Numbers
+    $$Int+Int \rightarrow Int$$
+    $$Float+(Int|Float) \rightarrow Float$$
+    $$(Float|Int)+Float \rightarrow Float$$
+
+2.  `-` : Subtraction operator
+    
+    **Operands**: a (`Int|Float`), b (`Int|Float`)
+
+    **Returns**: (`Float|Int`) - Difference of `Numbers` a and b
+
+    The operator takes care of implicit `Int` to `Float` conversions in case of Numbers
+    $$Int-Int \rightarrow Int$$
+    $$Float-(Int|Float) \rightarrow Float$$
+    $$(Float|Int)-Float \rightarrow Float$$
+
+
+3.  `*` : Multiplication operator  
+    
+    **Operands**: a (`Int|Float`), b (`Int|Float`)
+
+    **Returns**: (`Float|Int`) - Product of `Numbers` a and b
+
+    The operator takes care of implicit `Int` to `Float` conversions in case of Numbers
+    $$Int*Int \rightarrow Int$$
+    $$Float*(Int|Float) \rightarrow Float$$
+    $$(Float|Int)*Float \rightarrow Float$$
+
+4.  `/` : Division operator 
+
+    **Operands**: a (`Int|Float`), b (`Int|Float`), $ b \not = 0$
+
+    **Returns**: (`Float`) - $\dfrac{a}{b(\not=0)}$
+
+    $$(Float|Int)/(Float|Int) \rightarrow Float$$
+
+    *Note:* The operator takes care of the Zero Division Error(**Runtime**) 
+
+5.  `//` : Integer Division operator 
+
+    **Operands**: a (`Int|Float`), b (`Int|Float`), $ b \not = 0$
+
+    **Returns**: (`Int`) - $\lfloor\dfrac{a}{b(\not=0)}\rfloor$
+
+    $$(Float|Int)//(Float|Int) \rightarrow Int$$
+
+    *Note:* The operator takes care of the Zero Division Error(**Runtime**) 
+
+6.  `%` : Modulo operator 
+
+    **Operands**: a (`Int`), b (`Int`), $ b \not = 0$
+
+    **Returns**: (`Int`) - a MOD b($\not=0$)
+
+    $$(Int)\%(Int) \rightarrow Int$$
+    *Note:* The operator takes care of the Zero Division Error(**Runtime**) 
+
+### Binary Bitwise Operators
+
+7.  `<<` : Left shift operator 
+
+    **Operands**: a (`Int`), b (`Int`), $b \in I ^ {+}$
+
+    **Returns**: (`Int`) - a << b $(\in I ^ {+})$
+
+    $$(Int)<<(Int) \rightarrow Int$$
+    *Note:* The operator takes care of the Negative left operand by raising exception.
+
+8.  `>>` : Right shift operator 
+
+    **Operands**: a (`Int`), b (`Int`), $b \in I ^ {+}$
+
+    **Returns**: (`Int`) - a >> b $(\in I ^ {+})$
+
+    $$(Int)>>(Int) \rightarrow Int$$
+    *Note:* The operator takes care of the Negative left operand by raising exception.
+
+9.  `&` : Bitwise AND operator 
+
+    **Operands**: a (`Int`), b (`Int`)
+
+    **Returns**: (`Int`) - a AND b
+
+    $$(Int)\&(Int) \rightarrow Int$$
+
+10. `|` : Bitwise OR operator 
+
+    **Operands**: a (`Int`), b (`Int`)
+
+    **Returns**: (`Int`) - a OR b
+
+    $$(Int)|(Int) \rightarrow Int$$
+
+### Binary Comparision Operators
+
+11. `<=` : Less than or equals operator 
+
+    *Note:* Both the operands must be explicitly of the same type.
+
+    **Operands**: a (`Type`), b (`Type`)
+
+    **Returns**: (`Bool`) - a $\leq $ b
+
+    $$(Type) <= (Type) \rightarrow Bool$$
+
+12. `<` : Less than operator 
+
+    *Note:* Both the operands must be explicitly of the same type.
+
+    **Operands**: a (`Type`), b (`Type`)
+
+    **Returns**: (`Bool`) - a < b
+
+    $$(Type) < (Type) \rightarrow Bool$$
+
+13. `>` : Greater than operator 
+
+    *Note:* Both the operands must be explicitly of the same type.
+
+    **Operands**: a (`Type`), b (`Type`)
+
+    **Returns**: (`Bool`) - a > b
+
+    $$(Type) > (Type) \rightarrow Bool$$
+
+14. `>=` : Greater than or equals operator 
+
+    *Note:* Both the operands must be explicitly of the same type.
+
+    **Operands**: a (`Type`), b (`Type`)
+
+    **Returns**: (`Bool`) - a $\geq $ b
+
+    $$(Type) >= (Type) \rightarrow Bool$$
+
+15. `==` : Equality operator 
+
+    *Note:* Both the operands must be explicitly of the same type.
+
+    **Operands**: a (`Type`), b (`Type`)
+
+    **Returns**: (`Bool`) - a = b
+
+    $$(Type) == (Type) \rightarrow Bool$$
+
+16. `!=` : not equals operator 
+
+    *Note:* Both the operands must be explicitly of the same type.
+
+    **Operands**: a (`Type`), b (`Type`)
+
+    **Returns**: (`Bool`) - a $\neq$ b
+
+    $$(Type) != (Type) \rightarrow Bool$$
+
+### Binary Logical Operators
+
+17. `&&` : Logical AND operator 
+
+    **Operands**: a (`Bool`), b (`Bool`)
+
+    **Returns**: (`Bool`) - `true` if both *a* and *b* are true
+
+    $$(Bool) \&\& (Bool) \rightarrow Bool$$
+
+17. `||` : Logical OR operator 
+
+    **Operands**: a (`Bool`), b (`Bool`)
+
+    **Returns**: (`Bool`) - `true` if either *a* or *b* is true
+
+    $$(Bool) || (Bool) \rightarrow Bool$$
+
+### Unary arithematic Operators
+
+18. `-` : arithematic negation operator
+
+    **Operands**: a (`Float|Int`)
+
+    **Returns**: (`Float|Int`) - $-a$
+
+    $$(Float) \rightarrow Float$$
+    $$(Int) \rightarrow Int$$
+
+### Unary Logical Operators
+
+19. `-` : Logical negation operator
+
+    **Operands**: a (`Bool`)
+
+    **Returns**: (`Bool`) - NOT a 
+
+    $$(Bool) \rightarrow Bool$$
+
+
+## Operator Precedence
+
+
+## CFG of the parser

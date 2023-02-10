@@ -218,11 +218,6 @@ def evaluate(program: AST, environment: Dict[str,Variable] = None):
             match operator:
                 case "+":
                     
-                    # #for strings starts
-                    # if (isinstance(firstOperand, Str) and isinstance(secondOperand, Str)):
-                    #     return Str(firstOperand.value + secondOperand.value)
-                    # #for strings ends
-                    
                     BinOp.checkType(operator, firstOperand, secondOperand, Number, Number)
 
                     firstOperand, secondOperand = BinOp.implicitIntToFloat(firstOperand, secondOperand)
@@ -362,7 +357,7 @@ def evaluate(program: AST, environment: Dict[str,Variable] = None):
         
         case Let (var, e1, e2):
             if (not isinstance(var, Variable)):
-                InvalidProgram(Exception("Let expression parameter not of type Variable")) # To be completed
+                InvalidProgram(Exception("Let expression parameter not of type Variable")) 
             return evaluate(e2, environment | {var.name: evaluate(e1)})
 
         case If (condition, ifBlock, elseBlock):
@@ -409,13 +404,13 @@ def evaluate(program: AST, environment: Dict[str,Variable] = None):
             l=evaluate(left, environment)
             r=evaluate(right, environment)
             return r
+        
         case Loop(Variable(var),steps,block) :
             steps = evaluate(steps,environment)
             environment = environment | {var:steps}
             if (steps == Int(0)) :
                 return Bool(False)
             else :
-##                print("Iterations", steps.value)
                 environment[var] = steps
                 evaluate(block,environment)
                 return evaluate(Loop(Variable(var),BinOp("-",steps,Int(1)), block),environment)

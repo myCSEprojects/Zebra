@@ -44,15 +44,15 @@
     **Returns**: (`Float|Int`) - Product of `Numbers` a and b
 
     The operator takes care of implicit `Int` to `Float` conversions in case of Numbers
-    $$Int*Int \rightarrow Int$$
-    $$Float*(Int|Float) \rightarrow Float$$
-    $$(Float|Int)*Float \rightarrow Float$$
+    $$Int\*Int \rightarrow Int$$
+    $$Float\*(Int|Float) \rightarrow Float$$
+    $$(Float|Int)\*Float \rightarrow Float$$
 
 4.  `/` : Division operator 
 
-    **Operands**: a (`Int|Float`), b (`Int|Float`), $ b \not = 0$
+    **Operands**: a (`Int|Float`), b (`Int|Float`), $b \neq 0$
 
-    **Returns**: (`Float`) - $\dfrac{a}{b(\not=0)}$
+    **Returns**: (`Float`) - $\dfrac{a}{b(\neq0)} $
 
     $$(Float|Int)/(Float|Int) \rightarrow Float$$
 
@@ -60,9 +60,9 @@
 
 5.  `//` : Integer Division operator 
 
-    **Operands**: a (`Int|Float`), b (`Int|Float`), $ b \not = 0$
+    **Operands**: a (`Int|Float`), b (`Int|Float`), $b \neq 0 $
 
-    **Returns**: (`Int`) - $\lfloor\dfrac{a}{b(\not=0)}\rfloor$
+    **Returns**: (`Int`) - $\lfloor\dfrac{a}{b(\neq 0)}\rfloor$
 
     $$(Float|Int)//(Float|Int) \rightarrow Int$$
 
@@ -70,9 +70,9 @@
 
 6.  `%` : Modulo operator 
 
-    **Operands**: a (`Int`), b (`Int`), $ b \not = 0$
+    **Operands**: a (`Int`), b (`Int`), $b \ne 0$
 
-    **Returns**: (`Int`) - a MOD b($\not=0$)
+    **Returns**: (`Int`) - a MOD b($\ne0$)
 
     $$(Int)\%(Int) \rightarrow Int$$
     *Note:* The operator takes care of the Zero Division Error(**Runtime**) 
@@ -103,7 +103,7 @@
 
     **Returns**: (`Int`) - a AND b
 
-    $$(Int)\&(Int) \rightarrow Int$$
+    $$(Int) \And (Int) \rightarrow Int$$
 
 10. `|` : Bitwise OR operator 
 
@@ -183,7 +183,7 @@
 
     **Returns**: (`Bool`) - `true` if both *a* and *b* are true
 
-    $$(Bool) \&\& (Bool) \rightarrow Bool$$
+    $$(Bool) \And\And (Bool) \rightarrow Bool$$
 
 18. `||` : Logical OR operator 
 

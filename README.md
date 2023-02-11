@@ -219,3 +219,6 @@
 
 
 ## CFG of the parser
+
+## Scoping
+1. Referencing a variable in its initializer is not an error, but it resolves to variable in previous scope.

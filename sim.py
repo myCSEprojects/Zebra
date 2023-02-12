@@ -7,6 +7,10 @@ class Variable:
     '''
     Variable class containing the name of the variable further
     evaluating to a data type in python
+
+    dtype : Contains the data type of the variable
+
+    isConst : Denotes mutability of value
     '''
     name: str
 
@@ -38,6 +42,10 @@ class Str :
     value: str
 
 @dataclass
+class nil:
+    noval = None
+
+@dataclass
 class Slice:
     value : 'AST' 
     first : Int 
@@ -61,13 +69,14 @@ UNARY_OPERATORS = [
 
 # Basic Operations
 @dataclass
-class Let:
+class Declare:
     '''
-    Let class
+    Declaration class
     '''
     var: Variable
-    e1: 'AST'
-    e2: 'AST'
+    value: 'AST'
+    dtype: str
+    isConst: bool
 
 @dataclass
 class If:
@@ -108,8 +117,11 @@ class Scopes:
     '''
     Scopes storing the stack of environments
     '''
-    def __init__(self, stack: List[Dict[str, "AST"]] = [{}]):
-        self.stack = stack
+    def __init__(self, stack: List[Dict[Variable, "AST"]] = None):
+        if (stack == None):
+            self.stack = [dict()]
+        else:
+            self.stack = stack
     
     def beginScope(self):
         self.stack.append({})
@@ -118,30 +130,37 @@ class Scopes:
         assert(len(self.stack) != 0)
         self.stack.pop()
     
-    def declareVariable(self, name: str):
+    def declareVariable(self, var: Variable, value: 'AST', dtype:str, isConst: bool):
         '''
         Only declares a variable in the current scope
         '''
         assert(len(self.stack) != 0)
 
         # Avoiding redeclaration in the same scope
-        if name in self.stack[-1]:
-            InvalidProgram(Exception(f"Redeclaring already declared variable {name}"))
+        if var.name in self.stack[-1]:
+            InvalidProgram(Exception(f"Redeclaring already declared variable {var.name}"))
         
-        self.stack[-1][name] = nil()
+        if (value != nil() and not isinstance(value, dtype)):
+            InvalidProgram(Exception(f"Cannot initialize {dtype} with Literal of dtype {type(value)}."))
+
+        self.stack[-1][var.name] = [value, dtype, isConst]
     
     def updateVariable(self, name: str, value: 'AST'):
         for i in range(len(self.stack)-1, -1, -1):
-            if (name in self.stack[i]):
-                self.stack[i][name] = value
+            if name in self.stack[i]:
+                if (self.stack[i][name][2] == True):
+                    InvalidProgram(Exception(f"Cannot Update const Variable {name}"))
+                if (value != nil() and not isinstance(value, self.stack[i][name][1])):
+                    InvalidProgram(Exception(f"Cannot assign {type(value)} to {self.stack[i][name][1]}"))
+                self.stack[i][name][0] = value
                 return
         
-        InvalidProgram(Exception(f"Could not resolve the variable {name}."))
+        InvalidProgram(Exception(f"Could not find the variable {name}."))
 
     def getVariable(self, name: str):
         for i in range(len(self.stack)-1, -1, -1):
-            if (name in self.stack[i]):
-                return self.stack[i][name]
+            if name in self.stack[i]:
+                return self.stack[i][name][0]
         
         InvalidProgram(Exception(f"Could not resolve the variable {name}."))
 
@@ -186,9 +205,6 @@ class BinOp:
         if (not(isinstance(firstOperand, firstOperandType)) or not(isinstance(secondOperand, secondOperandType))):
             BinOp.raiseTypeError(operator, firstOperand, secondOperand)
 
-    
-
-
 
 @dataclass
 class UnOp:
@@ -206,9 +222,6 @@ class UnOp:
     def checkType(operator, operand, operandType):
         if (not isinstance(operand, operandType)):
             UnOp.raiseTypeError(operator, operand)
-@dataclass
-class nil:
-    noval = None
 
 @dataclass
 class PRINT:
@@ -221,20 +234,20 @@ class Seq:
     left: 'AST'
     right:'AST'
 
-AST = Variable|BinOp|Bool|Int|Float|Let|If|UnOp|Str|str_concat|Slice|nil|PRINT|Seq
+AST = Variable|BinOp|Bool|Int|Float|Declare|If|UnOp|Str|str_concat|Slice|nil|PRINT|Seq
+
 # Defining a Number as both an integer as  well as Float
 Number = Float|Int
 
 def InvalidProgram(exception ) -> None:
     raise exception
 
-def evaluate(program: AST, scopes: Dict[str,Variable] = None):
+def evaluate(program: AST, scopes: Scopes = None):
     '''
     Evaluates the given AST
     '''
     if (scopes == None):
         scopes = Scopes()
-
     match program:
         case Variable(name):
             return scopes.getVariable(name)
@@ -249,6 +262,9 @@ def evaluate(program: AST, scopes: Dict[str,Variable] = None):
             return program
 
         case Str(value):
+            return program
+
+        case nil():
             return program
 
         case Block(blockStatements):
@@ -393,8 +409,6 @@ def evaluate(program: AST, scopes: Dict[str,Variable] = None):
                     return Bool(firstOperand.value or secondOperand.value)
                 case "=":
                     BinOp.checkType(operator, firstOperand, secondOperand, Variable, AST)
-                    print(scopes.stack)
-                    print(firstOperand.name, secondOperand)
                     scopes.updateVariable(firstOperand.name, secondOperand)
                     return secondOperand
 
@@ -413,25 +427,17 @@ def evaluate(program: AST, scopes: Dict[str,Variable] = None):
                     UnOp.checkType(operator, operand, Bool)
                     return Bool(not operand.value)
         
-        case Let (var, e1, e2):
+        case Declare(var, value, dtype, isConst):
             if (not isinstance(var, Variable)):
-                InvalidProgram(Exception("Let expression parameter not of type Variable"))
+                InvalidProgram(Exception("RHS of declaration must be of type \'Variable\'"))
             
-            varValue =  evaluate(e1)
-            
-            scopes.beginScope()
+            # Evaluating the expression before declaration
+            value = evaluate(value)
 
-            # Declaring and initializing the variable
-            scopes.declareVariable(var.name)
-            scopes.updateVariable(var.name, varValue)
+            # Declaring
+            scopes.declareVariable(var, value, dtype, isConst)
 
-            # Evaluating e1
-            returnVal =  evaluate(e2, scopes)
-
-            # Ending the scope
-            scopes.endScope()
-
-            return returnVal
+            return value
 
         case If (condition, ifBlock, elseBlock):
             evaluated_condition = evaluate(condition)
@@ -478,15 +484,14 @@ def evaluate(program: AST, scopes: Dict[str,Variable] = None):
             r=evaluate(right, scopes)
             return r
         
-        case Loop(Variable(var),steps,block) :
+        case Loop(var,steps,block) :
             steps = evaluate(steps,scopes)
-            # environment = environment | {var:steps}
-            scopes.updateVariable(var, steps)
+            scopes.updateVariable(var.name, steps)
             if (steps == Int(0)) :
                 return Bool(False)
             else :
                 evaluate(block,scopes)
-                return evaluate(Loop(Variable(var),BinOp("-",steps,Int(1)), block),scopes)
+                return evaluate(Loop(var,BinOp("-",steps,Int(1)), block),scopes)
 
         case While(condition,block) :
             evaluated_condition = evaluate(condition,scopes)

@@ -1,6 +1,8 @@
 
 # Language specifications
-
+1. Explcit Semicolon terminated lines.
+2. Explicit denotion of new Scope using Braces.
+3. 
 ## Data Types
 
 `Int`: Interger data type representing whole numbers
@@ -222,3 +224,4 @@
 
 ## Scoping
 1. Referencing a variable in its initializer is not an error, but it resolves to variable in previous scope.
+

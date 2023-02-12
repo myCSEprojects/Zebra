@@ -2,7 +2,7 @@ from sim import *
 
 def test():
     x = Variable("x")
-    condition = Let(x, Int(0), BinOp("<", x, Int(20)))
+    condition = Seq(Declare(x, Int(0), "Int", False), BinOp("<", x, Int(20)))
     if (evaluate(If(condition, Int(10), Int(20))) != Int(10)):
         print("Basic evaluation of If failed")
         exit()

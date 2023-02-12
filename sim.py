@@ -11,7 +11,7 @@ class Variable:
     name: str
 @dataclass
 class nil:
-    value = None
+    noval = None
 # Basic Data Types
 @dataclass
 class Int:

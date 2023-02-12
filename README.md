@@ -252,9 +252,9 @@ $$Variable=Str  \rightarrow  Str$$
    
    Then evaluate each expression and return the value of the last evaluated expression.
    
-3. **Truthy(`Truthy()`)**
+3. **Truthy(`truthy()`)**
 
-   `Truthy(arg)` evaluates its argument `arg` and classify whether it corresponds to `True` or `False` 
+   `truthy(arg)` evaluates its argument `arg` and classify whether it corresponds to `True` or `False` 
    
    The values that corresponds to False are: 
    

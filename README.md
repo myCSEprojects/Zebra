@@ -12,6 +12,7 @@
 `Str`: String datatype representing strings `{"Manish", "Sriman", "Siva", "Rajesh", "Balu"}`
 
 `nil`: A datatype representing `None` type
+
 ---
 ## Operators
 

@@ -4,14 +4,13 @@ def test() :
     #test case 1
     x = Variable('x')
     y = Variable('y')
-    environment = {'y':Int(0)}
     steps_ = BinOp('+', Int(5), Int(2))
     e11 = BinOp('-',x,x)
     e2 = Loop(x,steps_,e11)
+    exp = Seq(Declare(y, Int(0), Int, False), e2)
+    l = evaluate(exp)
 
-    l = evaluate(e2,environment)
-
-
+    raise(Exception())
     if l != Bool(False) :
         print("Loop is failed")
         exit()

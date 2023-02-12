@@ -74,7 +74,7 @@ def test() :
     e11 = BinOp('=',a,e21)
 
     l = evaluate(Seq(e2,While(e1,Seq(PRINT(a,Str("")),e11))))
-
+    # l = evaluate(Seq([e2,While(e1,Seq([PRINT(a,Str("")),e11]))]))
     print()
 
     print("All test cases passed")

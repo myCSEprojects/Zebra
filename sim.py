@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from fractions import Fraction
-from typing import Union, Dict
+from typing import Union, Dict, List
 
 @dataclass
 class Variable:
@@ -9,7 +9,9 @@ class Variable:
     evaluating to a data type in python
     '''
     name: str
-
+@dataclass
+class nil:
+    value = None
 # Basic Data Types
 @dataclass
 class Int:
@@ -32,6 +34,12 @@ class Bool:
     Seperate boolean class representing two types of values True and False
     '''
     value: bool
+    @staticmethod
+    def truthy(checking):
+        if(checking == Int(0) or checking == Str("") or checking == Float(0) or checking == nil() or checking == Bool(False)):
+            return Bool(False)
+        else:
+            return Bool(True)
 
 @dataclass
 class Str :
@@ -159,9 +167,7 @@ class UnOp:
     def checkType(operator, operand, operandType):
         if (not isinstance(operand, operandType)):
             UnOp.raiseTypeError(operator, operand)
-@dataclass
-class none:
-    noval: None
+
 
 @dataclass
 class PRINT:
@@ -170,10 +176,13 @@ class PRINT:
     sep: str=' '
 @dataclass
 class Seq:
-    left: 'AST'
-    right:'AST'
+    lines: List['AST']
 
-AST = Variable|BinOp|Bool|Int|Float|Let|If|UnOp|Str|str_concat|Slice|none|PRINT|Seq
+@dataclass
+class truthy:
+    arg : 'AST'
+
+AST = Variable|BinOp|Bool|Int|Float|Let|If|UnOp|Str|str_concat|Slice|nil|PRINT|Seq|truthy
 # Defining a Number as both an integer as  well as Float
 Number = Float|Int
 
@@ -231,7 +240,6 @@ def evaluate(program: AST, environment: Dict[str,Variable] = None):
                     BinOp.checkType(operator, firstOperand, secondOperand, Number, Number)
                     
                     firstOperand, secondOperand = BinOp.implicitIntToFloat(firstOperand, secondOperand)
-                    
                     if (isinstance(firstOperand, Float)):
                         return Float(firstOperand.value - secondOperand.value)
                     else:
@@ -354,6 +362,7 @@ def evaluate(program: AST, environment: Dict[str,Variable] = None):
                 case "~":
                     UnOp.checkType(operator, operand, Bool)
                     return Bool(not operand.value)
+
         
         case Let (var, e1, e2):
             if (not isinstance(var, Variable)):
@@ -361,7 +370,7 @@ def evaluate(program: AST, environment: Dict[str,Variable] = None):
             return evaluate(e2, environment | {var.name: evaluate(e1)})
 
         case If (condition, ifBlock, elseBlock):
-            evaluated_condition = evaluate(condition)
+            evaluated_condition = Bool.truthy(evaluate(condition))
             if (not isinstance(evaluated_condition, Bool)):
                 InvalidProgram(Exception(f"The condition {condition} does not evaluate to a boolean type"))
             if (evaluated_condition.value):
@@ -400,10 +409,11 @@ def evaluate(program: AST, environment: Dict[str,Variable] = None):
                 print(b.value, end=end)
             return
 
-        case Seq(left, right):
-            l=evaluate(left, environment)
-            r=evaluate(right, environment)
-            return r
+        case Seq(lines):
+            ans = None
+            for line in lines:
+                ans = evaluate(line, environment)
+            return ans
         
         case Loop(Variable(var),steps,block) :
             steps = evaluate(steps,environment)

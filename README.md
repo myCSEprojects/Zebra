@@ -1,5 +1,10 @@
 
 # Language specifications
+1. Explcit Semicolon terminated lines.
+2. Explicit denotion of new Scope using Braces.
+3. Static typing against standard dynamic typing.
+4. Seperate Type checking parser(Type check before execution).
+5. 
 
 ## Data Types
 
@@ -219,3 +224,7 @@
 
 
 ## CFG of the parser
+
+## Scoping
+1. Referencing a variable in its initializer is not an error, but it resolves to variable in previous scope.
+

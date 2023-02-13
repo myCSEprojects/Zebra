@@ -104,8 +104,125 @@ class Parser:
                 case _:
                     break
         return left
-
-
+    
+    def parse_add(self):
+        left = self.parse_mult()
+        while True:
+            match self.lexer.peek_token():
+                case Operator(op) if op in ["+","-"]:
+                    self.lexer.advance()
+                    m = self.parse_mult()
+                    left = BinOp(op, left, m)
+                case _:
+                    break
+        return left
+    def parse_comparision(self):
+        left = self.parse_add()
+        while(isinstance(self.lexer.peek_token(), Operator) and self.lexer.peek_token().val in ["<",">",">=","<="]):
+            op = self.lexer.peek_token().val
+            self.lexer.advance()
+            right = self.parse_add()
+            left =  BinOp(op, left, right)
+        return left
+    def parse_equality(self):
+        left = self.parse_comparision()
+        while(self.lexer.peek_token() in [Operator("!="),Operator("==")]) :
+            t = self.lexer.peek_token()
+            self.lexer.advance()
+            right = self.parse_comparision()
+            left = BinOp(t.val,left,right)
+        return left
+    def parse_logic_and(self) :
+        left = self.parse_equality()
+        while(self.lexer.peek_token() == Operator("&&")):
+            self.lexer.advance()
+            right = self.parse_equality()
+            left = BinOp("&&",left,right)
+        return left
+    def parse_logic_or(self) :
+        left = self.parse_logic_and()
+        while(self.lexer.peek_token() == Operator("||") ) :
+            self.lexer.advance()
+            right = self.parse_logic_and()
+            left = BinOp('||',left,right)
+        return left
+    def parse_assign(self):
+        l = self.parse_logic_or()
+        a = self.lexer.peek_token()
+        if (a == Operator("=")) :
+            self.lexer.advance()
+            t = self.parse_assign()
+            return BinOp("=",l,t)
+        return l
+    def parse_expr(self):
+        return self.parse_assign()
+    def parse_statement(self):
+        match self.lexer.peek_token():
+            case Keyword("if"):
+                return self.parse_if()
+            case Keyword("while"):
+                return self.parse_while()
+            case Keyword("zout"):
+                return self.parse_print()
+            case _:
+                return self.parse_expr_stmt()
+    def parse_vardec(self):
+        found=None
+        l=self.lexer.peek_token()
+        if(l == Keyword("const")):
+            self.lexer.match(l)
+            found=True
+        else:
+            found=False
+        match self.lexer.peek_token():
+            case Keyword("int"):
+                self.lexer.match(Keyword("int"))
+                b=self.lexer.peek_token()
+                if(b.val in keywords or b.val in dtypes or b.val in ["true","false"]):
+                    raise IdentifierError()
+                self.lexer.match(b)
+                if(self.lexer.peek_token()!=Operator("=")):
+                    self.lexer.match(Operator(";"))
+                    return Declare(Variable(b.val),nil(), nil(), nil())
+                self.lexer.match(Operator("="))
+                ans=self.parse_expr_stmt()
+                return Declare(Variable(b.val),ans, Int, found)
+            case Keyword("float"):
+                self.lexer.match(Keyword("float"))
+                b=self.lexer.peek_token()
+                if(b.val in keywords or b.val in dtypes or b.val in ["true","false"]):
+                    raise IdentifierError()
+                self.lexer.match(b)
+                if(self.lexer.peek_token()!=Operator("=")):
+                    self.lexer.match(Operator(";"))
+                    return Declare(Variable(b.val),nil(), nil(), nil())
+                self.lexer.match(Operator("="))
+                ans=self.parse_expr_stmt()
+                return Declare(Variable(b.val),ans, Float, found)
+            case Keyword("string"):
+                self.lexer.match(Keyword("string"))
+                b=self.lexer.peek_token()
+                if(b.val in keywords or b.val in dtypes or b.val in ["true","false"]):
+                    raise IdentifierError()
+                self.lexer.match(b)
+                if(self.lexer.peek_token()!=Operator("=")):
+                    self.lexer.match(Operator(";"))
+                    return Declare(Variable(b.val),nil(), nil(), nil())
+                self.lexer.match(Operator("="))
+                ans=self.parse_expr_stmt()
+                return Declare(Variable(b.val),ans, Str , found)
+            case Keyword("boolean"):
+                self.lexer.match(Keyword("boolean"))
+                b=self.lexer.peek_token()
+                if(b.val in keywords or b.val in dtypes or b.val in ["true","false"]):
+                    raise IdentifierError()
+                self.lexer.match(b)
+                if(self.lexer.peek_token()!=Operator("=")):
+                    self.lexer.match(Operator(";"))
+                    return Declare(Variable(b.val),nil(), nil(), nil())
+                self.lexer.match(Operator("="))
+                ans=self.parse_expr_stmt()
+                return Declare(Variable(b.val),ans, Bool , found)
             
     def parse_declare(self):
         if(self.lexer.peek_token().val not in dtypes):

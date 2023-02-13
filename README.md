@@ -250,6 +250,7 @@ $$Variable=Str  \rightarrow  Str$$
    We could also specify the delimiter between the printing values using the keyword `end` 
    
    Suppose we want to put `comma` as the delimiter then we put, `end=", "` 
+   
  
 2. **Sequential implementation(`Seq()`)**
 
@@ -267,6 +268,7 @@ $$Variable=Str  \rightarrow  Str$$
    
    Every value other than these correspond to `True`.
    
+   
 ## Operator Precedence
 
 
@@ -275,3 +277,8 @@ $$Variable=Str  \rightarrow  Str$$
 ## Scoping
 1. Referencing a variable in its initializer is not an error, but it resolves to variable in previous scope.
 
+
+
+To be done: 
+
+1) The implement sep and end features in PRINT().

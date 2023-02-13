@@ -145,24 +145,17 @@ class Scopes:
         '''
         assert(len(self.stack) != 0)
 
-        # Avoiding redeclaration in the same scope
-        if var.name in self.stack[-1]:
-            InvalidProgram(Exception(f"Redeclaring already declared variable {var.name}"))
-        
-        if (value != nil() and not isinstance(value, dtype)):
-            InvalidProgram(Exception(f"Cannot initialize {dtype} with Literal of dtype {type(value)}."))
-
         self.stack[-1][var.name] = [value, dtype, isConst]
     
     def updateVariable(self, name: str, value: 'AST'):
+        
         for i in range(len(self.stack)-1, -1, -1):
             if name in self.stack[i]:
-                if (self.stack[i][name][2] == True):
-                    InvalidProgram(Exception(f"Cannot Update const Variable {name}"))
-                if (value != nil() and not isinstance(value, self.stack[i][name][1])):
-                    InvalidProgram(Exception(f"Cannot assign {type(value)} to {self.stack[i][name][1]}"))
+                # Truthify if lvalue is of type Bool
+                if (issubclass(self.stack[i][name][1], Bool)):
+                    value = Bool.truthy(value)
                 self.stack[i][name][0] = value
-                return
+                return value
         
         InvalidProgram(Exception(f"Could not find the variable {name}."))
 
@@ -300,9 +293,6 @@ def evaluate(program: AST, scopes: Scopes = None):
             
             match operator:
                 case "+":
-                    
-                    # BinOp.checkType(operator, firstOperand, secondOperand, Number, Number)
-
                     firstOperand, secondOperand = BinOp.implicitIntToFloat(firstOperand, secondOperand)
                     
                     if (isinstance(firstOperand, Float)):
@@ -311,8 +301,6 @@ def evaluate(program: AST, scopes: Scopes = None):
                         return Int(firstOperand.value + secondOperand.value)
 
                 case "-":
-                    # BinOp.checkType(operator, firstOperand, secondOperand, Number, Number)
-                    
                     firstOperand, secondOperand = BinOp.implicitIntToFloat(firstOperand, secondOperand)
                     if (isinstance(firstOperand, Float)):
                         return Float(firstOperand.value - secondOperand.value)
@@ -320,8 +308,6 @@ def evaluate(program: AST, scopes: Scopes = None):
                         return Int(firstOperand.value - secondOperand.value)
                 
                 case "/":
-                    # BinOp.checkType(operator, firstOperand, secondOperand, Number, Number)
-                    # Checking if the denominator is zero
                     if (secondOperand == Int(0) or secondOperand == Float(0)):
                         InvalidProgram(Exception("Cannot divide with zero."))
                     return Float(firstOperand.value / secondOperand.value)
@@ -337,8 +323,6 @@ def evaluate(program: AST, scopes: Scopes = None):
                     if (first_type and isinstance(secondOperand,Str)):
                         return Str(firstOperand.value * secondOperand.value)
                     #for string ends
-
-                    # BinOp.checkType(operator, firstOperand, secondOperand, Number, Number)
                     
                     firstOperand, secondOperand = BinOp.implicitIntToFloat(firstOperand, secondOperand)
                     
@@ -348,79 +332,54 @@ def evaluate(program: AST, scopes: Scopes = None):
                         return Int(firstOperand.value * secondOperand.value)
                 
                 case "//" :
-                    
-                    # BinOp.checkType(operator, firstOperand, secondOperand, Number, Number)
-                    # Checking if the denominator is zero
                     if (secondOperand == Int(0) or secondOperand == Float(0)):
                         InvalidProgram(Exception("Cannot divide with zero."))
                     return Int(int(firstOperand.value / secondOperand.value))
                 
                 case "%":
-                    # BinOp.checkType(operator, firstOperand, secondOperand, Int, Int)
                     return Int(firstOperand.value % secondOperand.value)
                 
                 case "<<":
-                    # BinOp.checkType(operator, firstOperand, secondOperand, Int, Int)
                     if (secondOperand.value < 0):
                         InvalidProgram(Exception(f"Negative left operand not allowed for {operator}."))
                     return Int(firstOperand.value << secondOperand.value)
                 
                 case ">>":
-                    # BinOp.checkType(operator, firstOperand, secondOperand, Int, Int)
                     if (secondOperand.value < 0):
                         InvalidProgram(Exception(f"Negative left operand not allowed for {operator}."))
                     return Int(firstOperand.value >> secondOperand.value)
                 
                 case "&":
-                    # BinOp.checkType(operator, firstOperand, secondOperand, Int, Int)
                     return Int(firstOperand.value & secondOperand.value)
                 
                 case "|":
-                    # BinOp.checkType(operator, firstOperand, secondOperand, Int, Int)
                     return Int(firstOperand.value | secondOperand.value)
                 
                 case "<=":
-                    # BinOp.checkSameType(operator, firstOperand, secondOperand)
-                    # BinOp.checkType(operator, firstOperand, secondOperand, Number, Number)
                     return Bool(firstOperand.value <= secondOperand.value)
                 
                 case "<":
-                    # BinOp.checkSameType(operator, firstOperand, secondOperand)
-                    # BinOp.checkType(operator, firstOperand, secondOperand, Number, Number)
                     return Bool(firstOperand.value < secondOperand.value)
                 
                 case "==":
-                    # BinOp.checkSameType(operator, firstOperand, secondOperand)
-                    # BinOp.checkType(operator, firstOperand, secondOperand, Number, Number)
                     return Bool(firstOperand.value == secondOperand.value) 
                 
                 case ">":
-                    # BinOp.checkSameType(operator, firstOperand, secondOperand)
-                    # BinOp.checkType(operator, firstOperand, secondOperand, Number, Number)
                     return Bool(firstOperand.value > secondOperand.value)
                 
                 case ">=":
-                    # BinOp.checkSameType(operator, firstOperand, secondOperand)
-                    # BinOp.checkType(operator, firstOperand, secondOperand, Number, Number)
                     return Bool(firstOperand.value >= secondOperand.value)
                 
                 case "!=":
-                    # BinOp.checkSameType(operator, firstOperand, secondOperand)
-                    # BinOp.checkType(operator, firstOperand, secondOperand, Number, Number)
                     return Bool(firstOperand.value != secondOperand.value)
                 
                 case "&&":
-                    # BinOp.checkType(operator, firstOperand, secondOperand, Bool, Bool)
                     return Bool(firstOperand.value and secondOperand.value)
                 
                 case "||":
-                    # BinOp.checkType(operator, firstOperand, secondOperand, Bool, Bool)
                     return Bool(firstOperand.value or secondOperand.value)
                 case "=":
-                    # BinOp.checkType(operator, firstOperand, secondOperand, Variable, AST)
-                    print(firstOperand, secondOperand)
-                    scopes.updateVariable(firstOperand.name, secondOperand)
-                    return secondOperand
+                    return scopes.updateVariable(firstOperand.name, secondOperand)
 
         case UnOp(operator, operand):
             operand = evaluate(operand, scopes)
@@ -442,7 +401,11 @@ def evaluate(program: AST, scopes: Scopes = None):
                 InvalidProgram(Exception("RHS of declaration must be of type \'Variable\'"))
             
             # Evaluating the expression before declaration
-            value = evaluate(value)
+            value = evaluate(value, scopes)
+
+            # Truthify if Bool dtype
+            if (dtype == Bool):
+                value = Bool.truthy(value)
 
             # Declaring
             scopes.declareVariable(var, value, dtype, isConst)
@@ -450,42 +413,39 @@ def evaluate(program: AST, scopes: Scopes = None):
             return value
 
         case If (condition, ifBlock, elseBlock):
-            evaluated_condition = Bool.truthy(evaluate(condition))
+            evaluated_condition = Bool.truthy(evaluate(condition, scopes))
             if (not isinstance(evaluated_condition, Bool)):
                 InvalidProgram(Exception(f"The condition {condition} does not evaluate to a boolean type"))
             if (evaluated_condition.value):
-                return evaluate(ifBlock)
+                return evaluate(ifBlock, scopes)
             else:
                 if (elseBlock != None): 
-                    return evaluate(elseBlock)
+                    return evaluate(elseBlock, scopes)
                 else:
                     return Bool(False)
 
         case str_concat(left,right):
             
-            elem1 = evaluate(left)
-            elem2 = evaluate(right)
+            elem1 = evaluate(left, scopes)
+            elem2 = evaluate(right, scopes)
             if (not(isinstance(elem1,Str) and isinstance(elem2,Str))):
                 InvalidProgram(Exception("Arguments passed to str_concat() must be of 'Str' type"))
             return Str(elem1.value+elem2.value)
 
 
         case Slice(value_, first, second):
-            elem = evaluate(value_)
+            elem = evaluate(value_, scopes)
 
-            # if (not (isinstance(elem,Str))):
-            #     InvalidProgram(Exception("Arguments passed to Slice() must be of 'Str' type"))
-            
             if (first>second or first < 0 or second > len(elem.value)):
                 InvalidProgram(Exception("Invalid index"))
             return Str(elem.value[first:second])
         
         case PRINT(print_stmt, end):
             ans=None
-            print(print_stmt)
             for stmt in print_stmt:
                 ans=evaluate(stmt,scopes)
                 print(ans.value, end=end)
+            print()
             return nil()
 
         case Seq(lines):
@@ -505,8 +465,6 @@ def evaluate(program: AST, scopes: Scopes = None):
 
         case While(condition,block) :
             evaluated_condition = evaluate(condition,scopes)
-            # if (not isinstance(evaluated_condition, Bool)):
-            #     InvalidProgram(Exception(f"The condition {condition} does not evaluate to a boolean type"))
             if (evaluated_condition.value):
                 evaluate(block,scopes)
                 return evaluate(While(condition,block),scopes)

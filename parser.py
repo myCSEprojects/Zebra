@@ -88,7 +88,7 @@ class Parser:
         if(op.val in ["~","-"]) :
             self.lexer.advance()
             right = self.parse_unary()
-            return UnOp(right,op.val)
+            return UnOp(op.val, right)
         return self.parse_atom()
     def parse_mult(self):
         left = self.parse_unary()

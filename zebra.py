@@ -2,6 +2,7 @@ import sys
 from parser import *
 from typechecking import *
 from sim import *
+import readline
 
 # Function definitions
 def executeFile(path: str):
@@ -19,7 +20,6 @@ def executeFile(path: str):
 
 def executeInteractive(stream:str, typecheckerScopes: TypecheckerScopes, scopes: Scopes):
     programAST = parse(stream)
-    print(programAST)
     typecheck(programAST, typecheckerScopes)
     return evaluate(programAST, scopes)
 
@@ -45,11 +45,10 @@ def interactiveShell():
         if (lines.strip() == "exit") :
             print("Goodbye")
             break
-        print(lines)
         output = executeInteractive(lines, typecheckerScopes, scopes)
         if (output != nil()):
-            print()
             print(output)
+        print()
 
 def execute(stream: str):
     programAST = parse(stream)

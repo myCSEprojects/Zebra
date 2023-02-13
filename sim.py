@@ -29,6 +29,7 @@ class Float:
     '''
     Floating objects represented as Fractions in python
     '''
+    value: Fraction
     def __init__(self, value):
         self.value = Fraction(value)
 
@@ -201,16 +202,16 @@ class BinOp:
 
     @staticmethod
     def raiseTypeError(operator, firstOperand, secondOperand):
-        raise Exception(f"Operator {operator} not defined for operands of type {type(firstOperand)} and {type(secondOperand)}.")
+        raise Exception(f"Operator {operator} not defined for operands of type {(firstOperand)} and {(secondOperand)}.")
 
     @staticmethod
     def checkSameType(operator, firstOperand, secondOperand):
-        if (type(firstOperand) != type(secondOperand)):
+        if ((firstOperand) != (secondOperand)):
             BinOp.raiseTypeError(operator, firstOperand, secondOperand)
 
     @staticmethod
     def checkType(operator, firstOperand, secondOperand, firstOperandType, secondOperandType):
-        if (not(isinstance(firstOperand, firstOperandType)) or not(isinstance(secondOperand, secondOperandType))):
+        if (not(issubclass(firstOperand, firstOperandType)) or not(issubclass(secondOperand, secondOperandType))):
             BinOp.raiseTypeError(operator, firstOperand, secondOperand)
 
 
@@ -224,11 +225,11 @@ class UnOp:
 
     @staticmethod
     def raiseTypeError(operator, operand):
-        InvalidProgram(Exception(f"Operator {operator} not defined for the operand of type {type(operand)}."))
+        InvalidProgram(Exception(f"Operator {operator} not defined for the operand of type {(operand)}."))
 
     @staticmethod
     def checkType(operator, operand, operandType):
-        if (not isinstance(operand, operandType)):
+        if (not issubclass(operand,operandType)):
             UnOp.raiseTypeError(operator, operand)
 @dataclass
 class none:
@@ -236,17 +237,12 @@ class none:
 
 @dataclass
 class PRINT:
-    left: 'AST'
-    right: 'AST'
+    print_stmt: List['AST']
     sep: str=' '
 
 @dataclass
 class Seq:
     lines: List['AST']
-
-@dataclass
-class truthy:
-    arg : 'AST'
 
 AST = Variable|BinOp|Bool|Int|Float|Declare|If|UnOp|Str|str_concat|Slice|nil|PRINT|Seq
 
@@ -305,7 +301,7 @@ def evaluate(program: AST, scopes: Scopes = None):
             match operator:
                 case "+":
                     
-                    BinOp.checkType(operator, firstOperand, secondOperand, Number, Number)
+                    # BinOp.checkType(operator, firstOperand, secondOperand, Number, Number)
 
                     firstOperand, secondOperand = BinOp.implicitIntToFloat(firstOperand, secondOperand)
                     
@@ -315,7 +311,7 @@ def evaluate(program: AST, scopes: Scopes = None):
                         return Int(firstOperand.value + secondOperand.value)
 
                 case "-":
-                    BinOp.checkType(operator, firstOperand, secondOperand, Number, Number)
+                    # BinOp.checkType(operator, firstOperand, secondOperand, Number, Number)
                     
                     firstOperand, secondOperand = BinOp.implicitIntToFloat(firstOperand, secondOperand)
                     if (isinstance(firstOperand, Float)):
@@ -324,7 +320,7 @@ def evaluate(program: AST, scopes: Scopes = None):
                         return Int(firstOperand.value - secondOperand.value)
                 
                 case "/":
-                    BinOp.checkType(operator, firstOperand, secondOperand, Number, Number)
+                    # BinOp.checkType(operator, firstOperand, secondOperand, Number, Number)
                     # Checking if the denominator is zero
                     if (secondOperand == Int(0) or secondOperand == Float(0)):
                         InvalidProgram(Exception("Cannot divide with zero."))
@@ -342,7 +338,7 @@ def evaluate(program: AST, scopes: Scopes = None):
                         return Str(firstOperand.value * secondOperand.value)
                     #for string ends
 
-                    BinOp.checkType(operator, firstOperand, secondOperand, Number, Number)
+                    # BinOp.checkType(operator, firstOperand, secondOperand, Number, Number)
                     
                     firstOperand, secondOperand = BinOp.implicitIntToFloat(firstOperand, secondOperand)
                     
@@ -353,75 +349,76 @@ def evaluate(program: AST, scopes: Scopes = None):
                 
                 case "//" :
                     
-                    BinOp.checkType(operator, firstOperand, secondOperand, Number, Number)
+                    # BinOp.checkType(operator, firstOperand, secondOperand, Number, Number)
                     # Checking if the denominator is zero
                     if (secondOperand == Int(0) or secondOperand == Float(0)):
                         InvalidProgram(Exception("Cannot divide with zero."))
                     return Int(int(firstOperand.value / secondOperand.value))
                 
                 case "%":
-                    BinOp.checkType(operator, firstOperand, secondOperand, Int, Int)
+                    # BinOp.checkType(operator, firstOperand, secondOperand, Int, Int)
                     return Int(firstOperand.value % secondOperand.value)
                 
                 case "<<":
-                    BinOp.checkType(operator, firstOperand, secondOperand, Int, Int)
+                    # BinOp.checkType(operator, firstOperand, secondOperand, Int, Int)
                     if (secondOperand.value < 0):
                         InvalidProgram(Exception(f"Negative left operand not allowed for {operator}."))
                     return Int(firstOperand.value << secondOperand.value)
                 
                 case ">>":
-                    BinOp.checkType(operator, firstOperand, secondOperand, Int, Int)
+                    # BinOp.checkType(operator, firstOperand, secondOperand, Int, Int)
                     if (secondOperand.value < 0):
                         InvalidProgram(Exception(f"Negative left operand not allowed for {operator}."))
                     return Int(firstOperand.value >> secondOperand.value)
                 
                 case "&":
-                    BinOp.checkType(operator, firstOperand, secondOperand, Int, Int)
+                    # BinOp.checkType(operator, firstOperand, secondOperand, Int, Int)
                     return Int(firstOperand.value & secondOperand.value)
                 
                 case "|":
-                    BinOp.checkType(operator, firstOperand, secondOperand, Int, Int)
+                    # BinOp.checkType(operator, firstOperand, secondOperand, Int, Int)
                     return Int(firstOperand.value | secondOperand.value)
                 
                 case "<=":
-                    BinOp.checkSameType(operator, firstOperand, secondOperand)
-                    BinOp.checkType(operator, firstOperand, secondOperand, Number, Number)
+                    # BinOp.checkSameType(operator, firstOperand, secondOperand)
+                    # BinOp.checkType(operator, firstOperand, secondOperand, Number, Number)
                     return Bool(firstOperand.value <= secondOperand.value)
                 
                 case "<":
-                    BinOp.checkSameType(operator, firstOperand, secondOperand)
-                    BinOp.checkType(operator, firstOperand, secondOperand, Number, Number)
+                    # BinOp.checkSameType(operator, firstOperand, secondOperand)
+                    # BinOp.checkType(operator, firstOperand, secondOperand, Number, Number)
                     return Bool(firstOperand.value < secondOperand.value)
                 
                 case "==":
-                    BinOp.checkSameType(operator, firstOperand, secondOperand)
-                    BinOp.checkType(operator, firstOperand, secondOperand, Number, Number)
+                    # BinOp.checkSameType(operator, firstOperand, secondOperand)
+                    # BinOp.checkType(operator, firstOperand, secondOperand, Number, Number)
                     return Bool(firstOperand.value == secondOperand.value) 
                 
                 case ">":
-                    BinOp.checkSameType(operator, firstOperand, secondOperand)
-                    BinOp.checkType(operator, firstOperand, secondOperand, Number, Number)
+                    # BinOp.checkSameType(operator, firstOperand, secondOperand)
+                    # BinOp.checkType(operator, firstOperand, secondOperand, Number, Number)
                     return Bool(firstOperand.value > secondOperand.value)
                 
                 case ">=":
-                    BinOp.checkSameType(operator, firstOperand, secondOperand)
-                    BinOp.checkType(operator, firstOperand, secondOperand, Number, Number)
+                    # BinOp.checkSameType(operator, firstOperand, secondOperand)
+                    # BinOp.checkType(operator, firstOperand, secondOperand, Number, Number)
                     return Bool(firstOperand.value >= secondOperand.value)
                 
                 case "!=":
-                    BinOp.checkSameType(operator, firstOperand, secondOperand)
-                    BinOp.checkType(operator, firstOperand, secondOperand, Number, Number)
+                    # BinOp.checkSameType(operator, firstOperand, secondOperand)
+                    # BinOp.checkType(operator, firstOperand, secondOperand, Number, Number)
                     return Bool(firstOperand.value != secondOperand.value)
                 
                 case "&&":
-                    BinOp.checkType(operator, firstOperand, secondOperand, Bool, Bool)
+                    # BinOp.checkType(operator, firstOperand, secondOperand, Bool, Bool)
                     return Bool(firstOperand.value and secondOperand.value)
                 
                 case "||":
-                    BinOp.checkType(operator, firstOperand, secondOperand, Bool, Bool)
+                    # BinOp.checkType(operator, firstOperand, secondOperand, Bool, Bool)
                     return Bool(firstOperand.value or secondOperand.value)
                 case "=":
-                    BinOp.checkType(operator, firstOperand, secondOperand, Variable, AST)
+                    # BinOp.checkType(operator, firstOperand, secondOperand, Variable, AST)
+                    print(firstOperand, secondOperand)
                     scopes.updateVariable(firstOperand.name, secondOperand)
                     return secondOperand
 
@@ -429,7 +426,7 @@ def evaluate(program: AST, scopes: Scopes = None):
             operand = evaluate(operand, scopes)
             match operator:
                 case "-":
-                    UnOp.checkType(operator, operand, Number)
+                    # UnOp.checkType(operator, operand, Number)
 
                     # Returning Literal similar to the operand literal
                     if (isinstance(operand, Float)):
@@ -437,7 +434,7 @@ def evaluate(program: AST, scopes: Scopes = None):
                     elif (isinstance(operand, Int)):
                         return Int(operand.value * -1)
                 case "~":
-                    UnOp.checkType(operator, operand, Bool)
+                    # UnOp.checkType(operator, operand, Bool)
                     return Bool(not operand.value)
         
         case Declare(var, value, dtype, isConst):
@@ -476,24 +473,23 @@ def evaluate(program: AST, scopes: Scopes = None):
         case Slice(value_, first, second):
             elem = evaluate(value_)
 
-            if (not (isinstance(elem,Str))):
-                InvalidProgram(Exception("Arguments passed to Slice() must be of 'Str' type"))
+            # if (not (isinstance(elem,Str))):
+            #     InvalidProgram(Exception("Arguments passed to Slice() must be of 'Str' type"))
             
             if (first>second or first < 0 or second > len(elem.value)):
                 InvalidProgram(Exception("Invalid index"))
             return Str(elem.value[first:second])
         
-        case PRINT(left, right, end):
-            a=evaluate(left,scopes)
-            if(a!=None):
-                print(a.value, end=end)
-            b=evaluate(right, scopes)
-            if(b!=None):
-                print(b.value, end=end)
-            return
+        case PRINT(print_stmt, end):
+            ans=None
+            print(print_stmt)
+            for stmt in print_stmt:
+                ans=evaluate(stmt,scopes)
+                print(ans.value, end=end)
+            return nil()
 
         case Seq(lines):
-            ans = None
+            ans = nil()
             for line in lines:
                 ans = evaluate(line, scopes)
             return ans
@@ -509,8 +505,8 @@ def evaluate(program: AST, scopes: Scopes = None):
 
         case While(condition,block) :
             evaluated_condition = evaluate(condition,scopes)
-            if (not isinstance(evaluated_condition, Bool)):
-                InvalidProgram(Exception(f"The condition {condition} does not evaluate to a boolean type"))
+            # if (not isinstance(evaluated_condition, Bool)):
+            #     InvalidProgram(Exception(f"The condition {condition} does not evaluate to a boolean type"))
             if (evaluated_condition.value):
                 evaluate(block,scopes)
                 return evaluate(While(condition,block),scopes)

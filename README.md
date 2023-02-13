@@ -8,11 +8,15 @@
 
 ## Data Types
 
-`Int`: Interger data type representing whole numbers
+`Int`: Integer data type representing whole numbers
 
 `Float`: Floating point numbers stored in form of Fractions $(\dfrac{p}{q}:p, q \in Q)$.
 
 `Bool`: Boolean data types representing `{'true', 'false'}`
+
+`Str`: String datatype representing strings `{"Manish", "Sriman", "Siva", "Rajesh", "Balu"}`
+
+`nil`: A datatype representing `None` type
 
 ---
 ## Operators
@@ -218,8 +222,51 @@
     **Returns**: (`Bool`) - NOT a 
 
     $$(Bool) \rightarrow Bool$$
+ 
+### Assignment Operator
 
+21.  `=` : Assignment operator
+    
+**Operands**: x (`Variable`), a (`AST`)
 
+**Returns**: (`Float|Int|Bool|Str`) - returns the evaluated value of a
+
+$$Variable=Int  \rightarrow  Int$$
+
+$$Variable=Float  \rightarrow  Float$$
+
+$$Variable=Bool  \rightarrow  Bool$$
+
+$$Variable=Str  \rightarrow  Str$$
+
+## Features 
+
+1. **A print operation that prints values to screen(`PRINT()`)**
+
+   `PRINT()` is used to perform the operation of printing the values to the screen. 
+   
+   It recursively prints the values to the screen which are given as arguments to it. 
+   
+   We could also specify the delimiter between the printing values using the keyword `end` 
+   
+   Suppose we want to put `comma` as the delimiter then we put, `end=", "` 
+ 
+2. **Sequential implementation(`Seq()`)**
+
+   We provide the sequence of expressions which we want to execute, as a list. 
+   
+   Then evaluate each expression and return the value of the last evaluated expression.
+   
+3. **Truthy(`truthy()`)**
+
+   `truthy(arg)` evaluates its argument `arg` and classify whether it corresponds to `True` or `False` 
+   
+   The values that corresponds to False are: 
+   
+   `empty dictionary`, `empty string`, `nil`, `Int(0)`, `Float(0)`, `False`, `empty list`
+   
+   Every value other than these correspond to `True`.
+   
 ## Operator Precedence
 
 

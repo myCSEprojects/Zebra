@@ -13,7 +13,9 @@ class Variable:
     isConst : Denotes mutability of value
     '''
     name: str
-
+@dataclass
+class nil:
+    noval = None
 # Basic Data Types
 @dataclass
 class Int:
@@ -36,6 +38,12 @@ class Bool:
     Seperate boolean class representing two types of values True and False
     '''
     value: bool
+    @staticmethod
+    def truthy(checking):
+        if(checking == Int(0) or checking == Str("") or checking == Float(0) or checking == nil() or checking == Bool(False)):
+            return Bool(False)
+        else:
+            return Bool(True)
 
 @dataclass
 class Str :
@@ -222,6 +230,9 @@ class UnOp:
     def checkType(operator, operand, operandType):
         if (not isinstance(operand, operandType)):
             UnOp.raiseTypeError(operator, operand)
+@dataclass
+class none:
+    noval: None
 
 @dataclass
 class PRINT:
@@ -231,8 +242,11 @@ class PRINT:
 
 @dataclass
 class Seq:
-    left: 'AST'
-    right:'AST'
+    lines: List['AST']
+
+@dataclass
+class truthy:
+    arg : 'AST'
 
 AST = Variable|BinOp|Bool|Int|Float|Declare|If|UnOp|Str|str_concat|Slice|nil|PRINT|Seq
 
@@ -304,7 +318,6 @@ def evaluate(program: AST, scopes: Scopes = None):
                     BinOp.checkType(operator, firstOperand, secondOperand, Number, Number)
                     
                     firstOperand, secondOperand = BinOp.implicitIntToFloat(firstOperand, secondOperand)
-                    
                     if (isinstance(firstOperand, Float)):
                         return Float(firstOperand.value - secondOperand.value)
                     else:
@@ -440,7 +453,7 @@ def evaluate(program: AST, scopes: Scopes = None):
             return value
 
         case If (condition, ifBlock, elseBlock):
-            evaluated_condition = evaluate(condition)
+            evaluated_condition = Bool.truthy(evaluate(condition))
             if (not isinstance(evaluated_condition, Bool)):
                 InvalidProgram(Exception(f"The condition {condition} does not evaluate to a boolean type"))
             if (evaluated_condition.value):
@@ -479,10 +492,11 @@ def evaluate(program: AST, scopes: Scopes = None):
                 print(b.value, end=end)
             return
 
-        case Seq(left, right):
-            l=evaluate(left, scopes)
-            r=evaluate(right, scopes)
-            return r
+        case Seq(lines):
+            ans = None
+            for line in lines:
+                ans = evaluate(line, scopes)
+            return ans
         
         case Loop(var,steps,block) :
             steps = evaluate(steps,scopes)

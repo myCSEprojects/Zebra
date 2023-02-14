@@ -4,7 +4,6 @@
 2. Explicit denotion of new Scope using Braces.
 3. Static typing against standard dynamic typing.
 4. Seperate Type checking parser(Type check before execution).
-5. 
 
 ## Data Types
 
@@ -250,6 +249,7 @@ $$Variable=Str  \rightarrow  Str$$
    We could also specify the delimiter between the printing values using the keyword `end` 
    
    Suppose we want to put `comma` as the delimiter then we put, `end=", "` 
+   
  
 2. **Sequential implementation(`Seq()`)**
 
@@ -267,11 +267,49 @@ $$Variable=Str  \rightarrow  Str$$
    
    Every value other than these correspond to `True`.
    
+   
 ## Operator Precedence
 
-
+The Operator Precedence from lowest to highest.
+|&nbsp;&nbsp;&nbsp;&nbsp;Name&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;Operators&nbsp;&nbsp;&nbsp;&nbsp;| &nbsp;&nbsp;&nbsp;&nbsp;Associates&nbsp;&nbsp;&nbsp;&nbsp; 
+|------------|----------------|----
+|assignment    |&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;=|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Right
+|logicalOr    |&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;\|\||&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Left
+|logicalAnd    |&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;\&\&|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Left
+|Equality    |&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;==&nbsp;&nbsp;&nbsp;!= |&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Left
+|Comparison|&nbsp;&nbsp;>&nbsp;&nbsp;&nbsp;>=&nbsp;&nbsp;&nbsp;<&nbsp;&nbsp;&nbsp;<=|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Left
+|add|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;-&nbsp;&nbsp;&nbsp;+|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Left
+|mult|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;/&nbsp;&nbsp;&nbsp;*|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Left
+|unary|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;~&nbsp;&nbsp;&nbsp;-|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Right
 ## CFG of the parser
+**The Context Free Grammar of our language:**
+$$~program  \rightarrow  (declaration)^*~~ EOF$$
+$$declaration  \rightarrow  vardec  ~~ | ~~ statement$$
+$$statement  \rightarrow  expression ~ Statement ~ | ~ print ~ Statement ~ | ~ if ~ Statement ~ | ~ while ~ Statement ~ | ~ for ~ Statement$$
+$$vardec \rightarrow  "var" ~~ identifier ~~ ( ~ "=" ~ expression) ~ ? ~ ";"$$
+$$while ~ Statement  \rightarrow  "while" ~~ "(" ~~ expression ~~ ")" ~~ "\{" ~~ declaration ~~ "\}" ~~ $$
+$$if ~ Statement  \rightarrow  "if" ~~ "(" ~~ expression ~~ ")" ~~ "\{" ~~ declaration ~~ "\}" ~~ ("else" ~~ "\{" ~~ declaration ~~ "\}")? ~~ $$
+$$print ~ Statement  \rightarrow  "zout" ~ "("~ expression ~ ")" ~ ";"$$
+$$for ~ Statement  \rightarrow  "for" ~ "("( ~ vardec ~ | ~ expression ~ Statement ~ | ~ ";") ~~ expression? ~~ ";" ~ expression? ~ ")" ~statement$$
+$$expression ~ Statement  \rightarrow  expression ~~ ";"$$
+$$expression \rightarrow  assignment$$
+$$assignment  \rightarrow  identifier "="assignment ~~~ | ~~~ logicOr ~~~ $$
+$$logicOr \rightarrow  logicAnd ~~ (~~ "||" ~~ logicAnd ~~ )^* ~~ $$
+$$logicAnd \rightarrow  equality ~~ ( ~~ "\And\And" ~~ equality ~~ )^* ~~ $$
+$$equality  \rightarrow  comparision ~~ ( ~ ( ~ "!=" ~ | ~ "==" ~ ) ~~ comparision)^* ~~ $$
+$$comparision  \rightarrow  add(~ (~ ">"~ |~ ">="~ |~ "<"~ |~ "<="~ )~ add~ )^* ~~ $$
+$$add  \rightarrow mult( ~ ("-" ~ | ~ "+") ~ mult)^* ~~ $$
+$$mult \rightarrow unary( ~ ("/" ~ | ~ "\*") ~ unary)^* ~~ $$
+$$unary  \rightarrow  ("!" ~ | ~ "-") ~ unary ~~ |~~ atom$$
+$$atom  \rightarrow  Identifier ~~ | ~~ Int ~~ | ~~ Bool ~~ | ~~ String ~~ | ~~ Float ~~ | ~~ nil ~~ | ~~ "(" ~ expression ~ ")"$$
+
+
 
 ## Scoping
 1. Referencing a variable in its initializer is not an error, but it resolves to variable in previous scope.
 
+
+
+To be done: 
+
+1) The implement sep and end features in PRINT().

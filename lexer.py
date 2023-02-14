@@ -1,6 +1,7 @@
 from fractions import Fraction
 from dataclasses import dataclass
 from typing import Optional, NewType
+from sim import Bool
 
 # A minimal example to illustrate typechecking.
 
@@ -33,10 +34,6 @@ class Stream:
 @dataclass
 class Integer:
     val: int
-
-@dataclass
-class Bool:
-    val: bool
 
 @dataclass
 class Keyword:

@@ -60,7 +60,6 @@ class Parser:
         self.lexer.match(Operator(';'))
         return t
     def parse_atom(self):
-        print(self.lexer.peek_token())
         match self.lexer.peek_token():
             case Identifier(name):
                 self.lexer.advance()
@@ -75,9 +74,7 @@ class Parser:
                 self.lexer.advance()
                 return Str(value)
             case Flt(value):
-                print(f"float {value}")
                 self.lexer.advance()
-                print(Float(value))
                 return Float(value)
             case Operator('('):
                 self.lexer.advance()
@@ -91,7 +88,7 @@ class Parser:
         if(op.val in ["~","-"]) :
             self.lexer.advance()
             right = self.parse_unary()
-            return UnOp(right,op.val)
+            return UnOp(op.val, right)
         return self.parse_atom()
     def parse_mult(self):
         left = self.parse_unary()

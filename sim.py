@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from fractions import Fraction
-from typing import Union, List, Dict
+from typing import Union, Optional, List, Dict
 
 @dataclass
 class Variable:
@@ -231,13 +231,20 @@ class none:
 @dataclass
 class PRINT:
     print_stmt: List['AST']
-    sep: str=' '
+    sep: Optional[str]=' '
 
 @dataclass
 class Seq:
     lines: List['AST']
 
-AST = Variable|BinOp|Bool|Int|Float|Declare|If|UnOp|Str|str_concat|Slice|nil|PRINT|Seq
+
+@dataclass
+class For:
+    initial : 'AST'
+    condition : 'AST'
+    block: 'AST'
+
+AST = Variable|BinOp|Bool|Int|Float|Declare|If|UnOp|Str|str_concat|Slice|nil|PRINT|Seq|For
 
 # Defining a Number as both an integer as  well as Float
 Number = Float|Int
@@ -470,6 +477,12 @@ def evaluate(program: AST, scopes: Scopes = None):
                 return evaluate(While(condition,block),scopes)
             else :
                 return Bool(False)
+        case For(initial,condition,block) :
+            # evaluating the initialization and declaration condition
+            if (initial != nil()) :
+                evaluate(initial,scopes)
+            return evaluate(While(condition,block),scopes)
+        
 
     
         # Handling unknown expressions

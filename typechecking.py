@@ -18,7 +18,7 @@ class TypecheckerScopes:
         assert(len(self.stack) != 0)
         self.stack.pop()
     
-    def declareVariable(self, var: Variable, ltype: 'AST', rtype:'AST', isConst: bool):
+    def declareVariable(self, var: Variable, rtype: 'AST', ltype:'AST', isConst: bool):
         '''
         Only declares a variable in the current scope
         '''
@@ -27,7 +27,8 @@ class TypecheckerScopes:
         # Avoiding redeclaration in the same scope
         if var.name in self.stack[-1]:
             InvalidProgram(Exception(f"Redeclaring already declared variable {var.name}"))
-        if ((not issubclass(ltype, Bool)) and rtype != ltype):
+        print(rtype, ltype)
+        if (rtype != ltype):
             InvalidProgram(Exception(f"Cannot initialize {ltype} with Literal of dtype {rtype}."))
 
         self.stack[-1][var.name] = [ltype, isConst]
@@ -37,9 +38,9 @@ class TypecheckerScopes:
             if name in self.stack[i]:
                 if (self.stack[i][name][1] == True):
                     InvalidProgram(Exception(f"Cannot Update const Variable {name}"))
-                if ( (not issubclass(self.stack[i][name][0], Bool)) and (rtype != self.stack[i][name][0])):
+                if (rtype != self.stack[i][name][0]):
                     InvalidProgram(Exception(f"Cannot assign {rtype} to {self.stack[i][name][0]}"))
-                return self.stack[i][name][0]
+                return
         
         InvalidProgram(Exception(f"Could not find the variable {name}."))
 
@@ -99,7 +100,7 @@ def typecheck(program: AST, scopes = None):
 
                     if (first_type and isinstance(secondOperand,Str)):
                         return Str
-                    # for string ends
+                    #for string ends
 
                     BinOp.checkType(operator, firstOperand, secondOperand, Number, Number)
                     
@@ -127,11 +128,10 @@ def typecheck(program: AST, scopes = None):
                     return Bool
                 
                 case "=":
-                    if not (isinstance(left,Variable)):
-                        InvalidProgram(Exception(f"Expected left side of assignment as Variable"))
-                    if not isinstance(right,AST):
-                        InvalidProgram(Exception(f"Invalid Expression"))
-                    return scopes.updateVariable(left.name, secondOperand)
+                    BinOp.checkType(operator, left, right, Variable, AST)
+                    scopes.updateVariable(left.name, secondOperand)
+                    BinOp.checkSameType(operator, firstOperand, secondOperand)
+                    return secondOperand
 
         case UnOp(operator, operand):   
             ot = typecheck(operand, scopes)
@@ -175,6 +175,19 @@ def typecheck(program: AST, scopes = None):
             if (not (issubclass(tc, AST))):
                 InvalidProgram(Exception("Arguments passed to If block must be of 'AST' type"))
             return nil
+
+        case For(initial,condition,block):
+            tc1 =typecheck(initial, scopes)
+            if(not(issubclass(tc1,AST))):
+                InvalidProgram(Exception("Arguments passes to For initial must be of 'AST' type"))
+           tc = typecheck(condition, scopes)
+           if(not( issubclass(tc,AST))):
+               InvalidProgram(Exception("Arguments passes to For condition must be of 'AST' type"))
+           tc2 = typecheck(block, scopes)
+           if (not(issubclass(tc2,AST))):
+               InvalidProgram(Exception("Arguments passes to For block must be of 'AST' type"))
+            return nil
+
         case Seq(lines):
             ret = nil()
             for line in lines:

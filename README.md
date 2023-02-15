@@ -244,9 +244,9 @@ $$Variable=Str  \rightarrow  Str$$
 
    `PRINT()` is used to perform the operation of printing the values to the screen. 
    
-   It recursively prints the values to the screen which are given as arguments to it. 
+   The input to the print function is a list of AST's, we first evaluate the AST and print the value to the screen.
    
-   We could also specify the delimiter between the printing values using the keyword `end` 
+   We could also specify the delimiter between the printing values using the keyword `end` , the default delimiter is `" "`.
    
    Suppose we want to put `comma` as the delimiter then we put, `end=", "` 
    
@@ -259,11 +259,11 @@ $$Variable=Str  \rightarrow  Str$$
    
 3. **Truthy(`truthy()`)**
 
-   `truthy(arg)` evaluates its argument `arg` and classify whether it corresponds to `True` or `False` 
+   `truthy(arg)` checks its argument `arg` and classify whether it corresponds to `True` or `False` 
    
    The values that corresponds to False are: 
    
-   `empty dictionary`, `empty string`, `nil`, `Int(0)`, `Float(0)`, `False`, `empty list`
+   `Int(0)`, `Float(0)`, `empty dictionary`, `empty string`, `nil`, `False`, `empty list`
    
    Every value other than these correspond to `True`.
    

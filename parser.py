@@ -18,7 +18,7 @@ class Parser:
         self.lexer.match(Operator("{"))
         ifseq=[]
         while(self.lexer.peek_token() != Operator("}")) :
-            t = self.parse_statement()
+            t = self.parse_declare()
             ifseq.append(t)
         self.lexer.match(Operator("}"))
         if(self.lexer.peek_token() != Keyword("else")):
@@ -27,10 +27,47 @@ class Parser:
         self.lexer.match(Operator("{"))
         elseq=[]
         while(self.lexer.peek_token() != Operator("}")) :
-            t = self.parse_statement()
+            t = self.parse_declare()
             elseq.append(t)
         self.lexer.match(Operator("}"))
         return If(c,Seq(ifseq), Seq(elseq))
+
+    def parse_for(self):
+        self.lexer.match(Keyword("for"))
+        self.lexer.match(Operator("("))
+        bf = self.lexer.peek_token()
+        initial = nil()
+        if(self.lexer.peek_token().val in dtypes):
+            initial = self.parse_vardec()
+        elif (bf == Operator(";")) :
+            self.lexer.advance()
+        else:
+            initial = self.parse_expr_stmt()
+
+        condition = self.parse_expr()
+        self.lexer.match(Operator(";"))
+        bf = self.lexer.peek_token()
+        
+        order = nil()
+        if (bf != Operator(")")) :
+            order = self.parse_expr()
+
+        self.lexer.match(Operator(")"))
+        self.lexer.match(Operator("{"))
+
+
+        forseq = []
+        while(self.lexer.peek_token() != Operator("}")) :
+            t = self.parse_declare()
+            forseq.append(t)
+        self.lexer.match(Operator("}"))
+
+        if (order != nil()):
+            forseq.append(order)
+            
+        return For(initial,condition,Seq(forseq))
+        
+    
     def parse_while(self):
         self.lexer.match(Keyword("while"))
         self.lexer.match(Operator("("))
@@ -39,7 +76,7 @@ class Parser:
         self.lexer.match(Operator("{"))
         wseq=[]
         while(self.lexer.peek_token() != Operator("}")) :
-            t = self.parse_statement()
+            t = self.parse_declare()
             wseq.append(t)
         self.lexer.match(Operator("}"))
         return While(c, Seq(wseq))
@@ -60,6 +97,7 @@ class Parser:
         self.lexer.match(Operator(';'))
         return t
     def parse_atom(self):
+        print(self.lexer.peek_token())
         match self.lexer.peek_token():
             case Identifier(name):
                 self.lexer.advance()
@@ -88,7 +126,7 @@ class Parser:
         if(op.val in ["~","-"]) :
             self.lexer.advance()
             right = self.parse_unary()
-            return UnOp(op.val, right)
+            return UnOp(right,op.val)
         return self.parse_atom()
     def parse_mult(self):
         left = self.parse_unary()
@@ -161,8 +199,11 @@ class Parser:
                 return self.parse_while()
             case Keyword("zout"):
                 return self.parse_print()
+            case Keyword("for"):
+                return self.parse_for()
             case _:
                 return self.parse_expr_stmt()
+            
     def parse_vardec(self):
         found=None
         l=self.lexer.peek_token()
@@ -180,7 +221,7 @@ class Parser:
                 self.lexer.match(b)
                 if(self.lexer.peek_token()!=Operator("=")):
                     self.lexer.match(Operator(";"))
-                    return Declare(Variable(b.val),nil(), nil(), nil())
+                    return Declare(Variable(b.val),nil(), nil, found)
                 self.lexer.match(Operator("="))
                 ans=self.parse_expr_stmt()
                 return Declare(Variable(b.val),ans, Int, found)
@@ -192,7 +233,7 @@ class Parser:
                 self.lexer.match(b)
                 if(self.lexer.peek_token()!=Operator("=")):
                     self.lexer.match(Operator(";"))
-                    return Declare(Variable(b.val),nil(), nil(), nil())
+                    return Declare(Variable(b.val),nil(), nil, found)
                 self.lexer.match(Operator("="))
                 ans=self.parse_expr_stmt()
                 return Declare(Variable(b.val),ans, Float, found)
@@ -204,7 +245,7 @@ class Parser:
                 self.lexer.match(b)
                 if(self.lexer.peek_token()!=Operator("=")):
                     self.lexer.match(Operator(";"))
-                    return Declare(Variable(b.val),nil(), nil(), nil())
+                    return Declare(Variable(b.val),nil(), nil, found)
                 self.lexer.match(Operator("="))
                 ans=self.parse_expr_stmt()
                 return Declare(Variable(b.val),ans, Str , found)
@@ -216,7 +257,7 @@ class Parser:
                 self.lexer.match(b)
                 if(self.lexer.peek_token()!=Operator("=")):
                     self.lexer.match(Operator(";"))
-                    return Declare(Variable(b.val),nil(), nil(), nil())
+                    return Declare(Variable(b.val),nil(), nil, found)
                 self.lexer.match(Operator("="))
                 ans=self.parse_expr_stmt()
                 return Declare(Variable(b.val),ans, Bool , found)
@@ -236,4 +277,9 @@ def parse(string):
         Parser.from_lexer(Lexer.from_stream(Stream.from_string(string)))
     )
 
+def test_parse():
+    print(parse("for (;i<10;i=i+1){zout(i);}"))
+    
 
+if __name__ == "__main__" :
+    test_parse()

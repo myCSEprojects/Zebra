@@ -180,12 +180,9 @@ def typecheck(program: AST, scopes = None):
             tc1 =typecheck(initial, scopes)
             if(not(issubclass(tc1,AST))):
                 InvalidProgram(Exception("Arguments passes to For initial must be of 'AST' type"))
-           tc = typecheck(condition, scopes)
-           if(not( issubclass(tc,AST))):
-               InvalidProgram(Exception("Arguments passes to For condition must be of 'AST' type"))
-           tc2 = typecheck(block, scopes)
-           if (not(issubclass(tc2,AST))):
-               InvalidProgram(Exception("Arguments passes to For block must be of 'AST' type"))
+            tc = typecheck(condition, scopes)
+            if(not( issubclass(tc,AST))):
+                InvalidProgram(Exception("Arguments passes to For condition must be of 'AST' type"))
             return nil
 
         case Seq(lines):

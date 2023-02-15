@@ -323,4 +323,3 @@ $$atom  \rightarrow  Identifier ~~ | ~~ Int ~~ | ~~ Bool ~~ | ~~ String ~~ | ~~ 
 To be done: 
 
 1) The implement sep and end features in PRINT().
-2) Fixing bugs in for-loop type checking

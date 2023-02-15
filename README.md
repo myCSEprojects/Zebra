@@ -308,7 +308,17 @@ $$atom  \rightarrow  Identifier ~~ | ~~ Int ~~ | ~~ Bool ~~ | ~~ String ~~ | ~~ 
 ## Scoping
 1. Referencing a variable in its initializer is not an error, but it resolves to variable in previous scope.
 
+## Typechecking
 
+1. It checks the features of every data type(Int, Float, Bool, Variable, Str, nil) is assigned correctly or not as it was mentioned earlier of which type they are.
+
+2. For now, We are checking all the features like Binary Operators, Unary Operator, Variables, Declare, Slice, While loop, If loop,
+   sequence, PRINT. We will add as the features come in.
+
+3. As the while loop, if loop, PRINT are statements we returned 'nil'.
+4. The slice returns str.
+5. For checking the data type we are typechecking the value which is assigned to it. The variable datatype is Int if it is assigned Integer,
+    and it is Str if the variable is assigned String.
 
 To be done: 
 

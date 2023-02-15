@@ -481,7 +481,7 @@ def evaluate(program: AST, scopes: Scopes = None):
             # evaluating the initialization and declaration condition
             if (initial != nil()) :
                 evaluate(initial,scopes)
-            return evaluate(While(condition,block))
+            return evaluate(While(condition,block),scopes)
         
 
     

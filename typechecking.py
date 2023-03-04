@@ -27,13 +27,15 @@ class TypecheckerScopes:
         # Avoiding redeclaration in the same scope
         if var.name in self.stack[-1]:
             InvalidProgram(Exception(f"Redeclaring already declared variable {var.name}"))
-        print(rtype, ltype)
         if (rtype != ltype):
             InvalidProgram(Exception(f"Cannot initialize {ltype} with Literal of dtype {rtype}."))
 
         self.stack[-1][var.name] = [ltype, isConst]
     
     def updateVariable(self, name: str, rtype: AST):
+        '''
+        Utility to update the variable with the given name
+        '''
         for i in range(len(self.stack)-1, -1, -1):
             if name in self.stack[i]:
                 if (self.stack[i][name][1] == True):
@@ -45,6 +47,9 @@ class TypecheckerScopes:
         InvalidProgram(Exception(f"Could not find the variable {name}."))
 
     def getVariable(self, name: str):
+        '''
+        Utility to get the value of the variable with the given name
+        '''
         for i in range(len(self.stack)-1, -1, -1):
             if name in self.stack[i]:
                 return self.stack[i][name][0]
@@ -128,9 +133,11 @@ def typecheck(program: AST, scopes = None):
                     return Bool
                 
                 case "=":
-                    BinOp.checkType(operator, left, right, Variable, AST)
+                    BinOp.checkType(operator, type(left), secondOperand, Variable, AST)
+                    
+                    BinOp.checkSameType(operator, firstOperand, secondOperand|nil)
+                    
                     scopes.updateVariable(left.name, secondOperand)
-                    BinOp.checkSameType(operator, firstOperand, secondOperand)
                     return secondOperand
 
         case UnOp(operator, operand):   

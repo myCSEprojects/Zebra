@@ -16,11 +16,9 @@ def executeFile(path: str):
         stream = None
         with open(path, 'r') as file:
             stream = '\n'.join(file.readlines())
-        execute(stream)
-
     except:
         InvalidProgram(Exception(f"Specified file at {path} does not exist!"));
-
+    execute(stream)
 def execute(stream: str):
     programAST = parse(stream)
     typecheck(programAST)
@@ -34,10 +32,11 @@ def execute(stream: str):
     return nil()
 
 def executeInteractive(stream:str, typecheckerScopes: TypecheckerScopes, scopes: Scopes):
-    programAST = parse(stream)
-    typecheck(programAST, typecheckerScopes)
+    
     if (not isError):
         try: 
+            programAST = parse(stream)
+            typecheck(programAST, typecheckerScopes)
             output = evaluate(programAST, scopes)
             return output
         except Exception as e:
@@ -55,30 +54,35 @@ def interactiveShell():
     # Creating scopes for typechecking
     typecheckerScopes = TypecheckerScopes()
 
-    while True:
-        print(">>", end = " ")
-        lines = ""
-        while(True):
-            line = input().strip()
+    try:
+        while True:
             
-            if (line.endswith('\\')):
-                line = line[:-1]
-                lines += line 
-            else:
-                lines += line 
+            # variable to get all the lines
+            lines = ""
+            
+            # Initially get line as input
+            line = input(">> ").strip()
+            lines += line 
+
+            # Take input until the no line is given if the line does not end with ";"
+            if (not line.endswith(';')):
+                while(line != ""):
+                    line = input(".. ").strip()
+                    if (line != ""):
+                        lines += line
+            
+            # Way to exit the shell
+            if (lines.strip() == "exit") :
+                print("Goodbye")
                 break
-        
-        # Way to exit the shell
-        if (lines.strip() == "exit") :
-            print("Goodbye")
-            break
-        
-        output = executeInteractive(lines, typecheckerScopes, scopes)
-        
-        # Printing output only if it returns something
-        if (output != nil()):
-            print(output)
-        print()
+            
+            output = executeInteractive(lines, typecheckerScopes, scopes)
+            
+            # Printing new line after each line
+            print()
+            
+    except KeyboardInterrupt:
+        print("GoodBye")
 
 if __name__ == "__main__":
     

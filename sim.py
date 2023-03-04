@@ -84,7 +84,7 @@ class Declare:
     '''
     var: Variable
     value: 'AST'
-    dtype: str
+    dtype: type
     isConst: bool
 
 @dataclass
@@ -139,21 +139,24 @@ class Scopes:
         assert(len(self.stack) != 0)
         self.stack.pop()
     
-    def declareVariable(self, var: Variable, value: 'AST', dtype:str, isConst: bool):
+    def declareVariable(self, var: Variable, value: 'AST', dtype:type, isConst: bool):
         '''
         Only declares a variable in the current scope
         '''
         assert(len(self.stack) != 0)
-
         self.stack[-1][var.name] = [value, dtype, isConst]
     
     def updateVariable(self, name: str, value: 'AST'):
-        
+        '''
+        Utility to update the variable in the closest scope
+        '''
         for i in range(len(self.stack)-1, -1, -1):
             if name in self.stack[i]:
+                
                 # Truthify if lvalue is of type Bool
                 if (issubclass(self.stack[i][name][1], Bool)):
                     value = Bool.truthy(value)
+                
                 self.stack[i][name][0] = value
                 return value
         
@@ -199,7 +202,7 @@ class BinOp:
 
     @staticmethod
     def checkSameType(operator, firstOperand, secondOperand):
-        if ((firstOperand) != (secondOperand)):
+        if (not issubclass((firstOperand),(secondOperand))):
             BinOp.raiseTypeError(operator, firstOperand, secondOperand)
 
     @staticmethod
@@ -392,7 +395,6 @@ def evaluate(program: AST, scopes: Scopes = None):
             operand = evaluate(operand, scopes)
             match operator:
                 case "-":
-                    # UnOp.checkType(operator, operand, Number)
 
                     # Returning Literal similar to the operand literal
                     if (isinstance(operand, Float)):
@@ -400,12 +402,9 @@ def evaluate(program: AST, scopes: Scopes = None):
                     elif (isinstance(operand, Int)):
                         return Int(operand.value * -1)
                 case "~":
-                    # UnOp.checkType(operator, operand, Bool)
                     return Bool(not operand.value)
         
         case Declare(var, value, dtype, isConst):
-            if (not isinstance(var, Variable)):
-                InvalidProgram(Exception("RHS of declaration must be of type \'Variable\'"))
             
             # Evaluating the expression before declaration
             value = evaluate(value, scopes)
@@ -482,10 +481,8 @@ def evaluate(program: AST, scopes: Scopes = None):
             if (initial != nil()) :
                 evaluate(initial,scopes)
             return evaluate(While(condition,block),scopes)
-        
-
     
         # Handling unknown expressions
         case _:
-            InvalidProgram(Exception("Expression Invalid"))
+            InvalidProgram(Exception("Expression|Statement Invalid"))
 

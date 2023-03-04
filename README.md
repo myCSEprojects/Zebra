@@ -320,6 +320,12 @@ $$atom  \rightarrow  Identifier ~~ | ~~ Int ~~ | ~~ Bool ~~ | ~~ String ~~ | ~~ 
 5. For checking the data type we are typechecking the value which is assigned to it. The variable datatype is Int if it is assigned Integer,
     and it is Str if the variable is assigned String.
 
-To be done: 
-
-1) The implement sep and end features in PRINT().
+To be done:
+1. refactor code    
+2. Comment code
+3. Implement errors
+4. Complete the test files
+5. Implement the resolver pass
+6. Update the for loop for scopes
+7. Fixed the assignment typechecking bug
+8. PRINT test cases not fixed

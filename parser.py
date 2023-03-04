@@ -97,7 +97,6 @@ class Parser:
         self.lexer.match(Operator(';'))
         return t
     def parse_atom(self):
-        print(self.lexer.peek_token())
         match self.lexer.peek_token():
             case Identifier(name):
                 self.lexer.advance()
@@ -221,7 +220,7 @@ class Parser:
                 self.lexer.match(b)
                 if(self.lexer.peek_token()!=Operator("=")):
                     self.lexer.match(Operator(";"))
-                    return Declare(Variable(b.val),nil(), nil, found)
+                    return Declare(Variable(b.val),nil(), Int, found)
                 self.lexer.match(Operator("="))
                 ans=self.parse_expr_stmt()
                 return Declare(Variable(b.val),ans, Int, found)
@@ -233,7 +232,7 @@ class Parser:
                 self.lexer.match(b)
                 if(self.lexer.peek_token()!=Operator("=")):
                     self.lexer.match(Operator(";"))
-                    return Declare(Variable(b.val),nil(), nil, found)
+                    return Declare(Variable(b.val),nil(), Float, found)
                 self.lexer.match(Operator("="))
                 ans=self.parse_expr_stmt()
                 return Declare(Variable(b.val),ans, Float, found)
@@ -245,7 +244,7 @@ class Parser:
                 self.lexer.match(b)
                 if(self.lexer.peek_token()!=Operator("=")):
                     self.lexer.match(Operator(";"))
-                    return Declare(Variable(b.val),nil(), nil, found)
+                    return Declare(Variable(b.val),nil(), Str, found)
                 self.lexer.match(Operator("="))
                 ans=self.parse_expr_stmt()
                 return Declare(Variable(b.val),ans, Str , found)
@@ -257,7 +256,7 @@ class Parser:
                 self.lexer.match(b)
                 if(self.lexer.peek_token()!=Operator("=")):
                     self.lexer.match(Operator(";"))
-                    return Declare(Variable(b.val),nil(), nil, found)
+                    return Declare(Variable(b.val),nil(), Bool, found)
                 self.lexer.match(Operator("="))
                 ans=self.parse_expr_stmt()
                 return Declare(Variable(b.val),ans, Bool , found)

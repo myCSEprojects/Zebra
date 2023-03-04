@@ -1,7 +1,6 @@
 from typechecking import *
 
-def test_typecheck():
-    import pytest
+def test():
     te = typecheck(BinOp("+", Int(2), Int(3)))
     assert te == Int
     te = typecheck(BinOp("<", Int(2), Int(3)))
@@ -9,7 +8,7 @@ def test_typecheck():
     try:
         typecheck(BinOp("+", BinOp("*", Int(2), Int(3)), BinOp("<", Int(2), Int(3))))
         print("No error detected")
-        sys.exit()
+        return -1
     except:
         print("Error detected")
         pass
@@ -23,12 +22,13 @@ def test_typecheck():
     try:
         typecheck(If(BinOp(">", Int(4), Int(2)), BinOp("+", Int(4), Int(2)), BinOp("-", Int(4), Int(2))))
         print("No error detected")
-        sys.exit()
+        return -1
     except:
         print("Error detected")
         pass
 
     print("All testcases passed")
+    return 0
 
 if(__name__ == "__main__"):
-    test_typecheck()
+    test()

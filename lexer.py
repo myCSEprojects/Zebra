@@ -1,9 +1,13 @@
 from fractions import Fraction
 from dataclasses import dataclass
 from typing import Optional, NewType
-from sim import Bool
+from error import Error
 
-# A minimal example to illustrate typechecking.
+class TokenException(Exception):
+    '''
+    Class for raising the TokenException to be caught by the parseProgram
+    '''
+    pass
 
 class EndOfStream(Exception):
     pass
@@ -30,36 +34,43 @@ class Stream:
         return self.source[self.pos]
 
 # Define the token types.
+@dataclass
+class Token:
+    lineNumber: int
 
 @dataclass
-class Integer:
+class Integer(Token):
     val: int
 
 @dataclass
-class Keyword:
+class Keyword(Token):
     val: str
 
 @dataclass
-class Identifier:
+class Identifier(Token):
     val: str
         
 @dataclass
-class Operator:
+class Operator(Token):
     val: str
 
 @dataclass 
-class String:
+class String(Token):
     val:str
 
 @dataclass
-class Flt:
+class Flt(Token):
     val:float
+
+@dataclass
+class Boolean(Token):
+    val:bool
 
 @dataclass 
 class EOF:
     pass
 
-Token = Integer | Bool | Keyword | Identifier | Operator | Flt
+Integer | Boolean | Keyword | Identifier | Operator | Flt
 
 class EndOfTokens(Exception):
     pass
@@ -70,23 +81,43 @@ symbolic_operators = "+ - * / < > ! = ; { } ( ) , ~ % & | ~".split()
 str_denote = ["'",'"']
 whitespace = " \t\n"
 
-def word_to_token(word):
+def word_to_token(lineNumber, word):
     if (word in keywords) or (word in dtypes):
-        return Keyword(word)
+        return Keyword(lineNumber,word)
     if word == "true":
-        return Bool(True)
+        return Boolean(lineNumber, True)
     if word == "false":
-        return Bool(False)
-    return Identifier(word)
-
-class TokenError(Exception):
-    pass
-
+        return Boolean(False)
+    return Identifier(lineNumber,word)
 
 @dataclass
 class Lexer:
     stream: Stream
     save: Token = None
+    lineNumber = 0
+    
+    def synchronize(self):
+        '''
+        Synchronize this parser to a (next statement | EOF) in case of any errors
+        '''
+        while(self.peek_token() != EOF()):
+            if (self.peek_token().val == ";"):
+                self.advance()
+                return
+            self.advance()
+
+    def TokenError(self, message_: str, lineNumber: int, type_: str="TokenError"):
+        '''
+        Way to report Token Error
+        '''
+        # Reporting the error
+        Error(type_ , message_, lineNumber).report()
+
+        # Synchronizing the lexer
+        self.synchronize()
+
+        # Raising the parseException to be caught using parse program
+        raise TokenException
 
     def from_stream(s):
         return Lexer(s)
@@ -94,7 +125,6 @@ class Lexer:
     def next_token(self) -> Token:
         try:
             next_chr =  self.stream.next_char()
-
             match next_chr:
 
                 case c if c in symbolic_operators: 
@@ -105,15 +135,15 @@ class Lexer:
                                 c = self.stream.next_char()
                                 if ((s=="!" or s=="<" or s==">") and c == "=") or (c==s and (s==">" or s=="<" or s=="=" or s=="&" or s=="|")):
                                     s = s + str(c) 
-                                    return(Operator(s))
+                                    return(Operator(self.lineNumber,s))
                                 else:
                                     self.stream.unget()
-                                    return (Operator(s))
+                                    return (Operator(self.lineNumber,s))
                             
                             except EndOfStream:
-                                return (Operator(s))
+                                return (Operator(self.lineNumber,s))
 
-                    return Operator(s)         
+                    return Operator(self.lineNumber,s)         
 
                 case c if c in str_denote:
                     s=""
@@ -121,7 +151,7 @@ class Lexer:
                         try:
                             c = self.stream.next_char()
                             if c == next_chr:
-                                return String(s)
+                                return String(self.lineNumber,s)
                             else:
                                 s = s+str(c)
 
@@ -150,20 +180,20 @@ class Lexer:
                                             if (self.stream.pres() == '.'):
                                                 raise Exception("Invalid literal found")
                                             
-                                            return Flt((n+float(d)))
+                                            return Flt(self.lineNumber,(n+float(d)))
 
                                 except:
                                     if d=="0.":
                                         raise Exception("Invalid literal found")
-                                    return Flt((n+float(d)))
+                                    return Flt(self.lineNumber,(n+float(d)))
 
                                 
                             else:
                                 self.stream.unget()
-                                return Integer(n)
+                                return Integer(self.lineNumber,n)
 
                         except EndOfStream:
-                            return Integer(n)
+                            return Integer(self.lineNumber,n)
 
                 case c if c.isalpha():
                     s = c
@@ -174,11 +204,14 @@ class Lexer:
                                 s = s + c
                             else:
                                 self.stream.unget()
-                                return word_to_token(s)
+                                return word_to_token(self.lineNumber, s)
                         except EndOfStream:
-                            return word_to_token(s)
+                            return word_to_token(self.lineNumber, s)
 
                 case c if c in whitespace:
+                    # increasing the line number in case of 
+                    if (c == '\n'):
+                        self.lineNumber += 1
                     return self.next_token()
 
                 case _:
@@ -200,9 +233,12 @@ class Lexer:
         self.save = None
 
     def match(self, expected):
-        if self.peek_token() == expected:
+        # Check for the token
+        if self.peek_token().val == expected.val:
             return self.advance()
-        raise TokenError()
+        
+        # Report the corresponding token error and raise token exception
+        self.TokenError(f"Expected a '{expected.val}'", self.lineNumber)
 
     def __iter__(self):
         return self

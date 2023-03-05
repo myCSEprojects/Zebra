@@ -12,42 +12,65 @@ def executeFile(path: str):
     '''
     Executes the file at the given path
     '''
+    # Try to obtain the stream of characters
     try: 
         stream = None
         with open(path, 'r') as file:
-            stream = '\n'.join(file.readlines())
+            stream = ''.join(file.readlines()).strip()
+    # In case the given file location is invalid
     except:
         InvalidProgram(Exception(f"Specified file at {path} does not exist!"));
     execute(stream)
+
 def execute(stream: str):
-    programAST = parse(stream)
+    '''
+    Execute a given string
+    '''
+    global isError
+    # Parsing the given string
+    programAST, isError = parse(stream)
+    
+    # Exiting in case of parsing errors
+    if (isError):
+        return nil()
+    
+    # Perform type checking for the produced ast
     typecheck(programAST)
+    
     if (not isError):
+        # Try to execute in case of no runtime errors
         try:
             output = evaluate(programAST)
             return output
+        # Catching all runtime exceptions
         except Exception as e:
-            print(repr(e))
             return nil()
     return nil()
 
 def executeInteractive(stream:str, typecheckerScopes: TypecheckerScopes, scopes: Scopes):
-    
+    global isError
     if (not isError):
         try: 
-            programAST = parse(stream)
+            programAST, isError = parse(stream)
+            print(programAST)
+            # Exiting if there were any errors during parsing
+            if (isError):
+                return
             typecheck(programAST, typecheckerScopes)
             output = evaluate(programAST, scopes)
             return output
         except Exception as e:
-            print(repr(e))
-            return nil()
+            # An uncaught expression for development purpose
+            raise e
     return nil()
 
 def interactiveShell():
     '''
     Run the lanuage in interactive shell form
     '''
+
+    global isError
+
     # Creating Scopes
     scopes = Scopes()
 
@@ -76,10 +99,13 @@ def interactiveShell():
                 print("Goodbye")
                 break
             
+            # Executing the lines
             output = executeInteractive(lines, typecheckerScopes, scopes)
             
             # Printing new line after each line
             print()
+
+            isError = False
             
     except KeyboardInterrupt:
         print("GoodBye")

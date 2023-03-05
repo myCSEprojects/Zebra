@@ -329,3 +329,14 @@ To be done:
 6. Update the for loop for scopes
 7. Fixed the assignment typechecking bug
 8. PRINT test cases not fixed
+9. Adding a synchronize method to the parser class.
+10. Add Line number feature to the tokens
+
+# Error Recovery 
+
+## During parsing
+We use panic mode error recovery for errors during parse errors.
+
+When we encounter an error inside parsing we report the error, set the `isError` flag to `True` and synchronize the parser to the next statement or the end of file.
+
+This prevents cascading of errors and is fast enough.

@@ -28,7 +28,7 @@ class TypeCheckException(Exception):
 
 # Function to raise Type Check errors
 def typeCheckError(message_: str, lineNumber: int, type_: str="typeCheckError"):
-    Error(message_, lineNumber, type_).report()
+    Error(type_, message_, lineNumber).report()
 
     # Raising the TypeCheckException to be caught in the typecheckAST function
     raise TypeCheckException()

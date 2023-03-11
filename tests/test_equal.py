@@ -1,18 +1,14 @@
 from sim import *
 
 def test():
+    identifier_x = Identifier(0, "x")
     x = Variable("x")
 
-    if (evaluate(Seq([Declare(x, nil(), Int, False), BinOp("=", x, Int(2))])) != Int(2)):
-        print("Basic evaluation of PRINT failed")
+    if (evaluate(Seq([Declare(identifier_x, nil(), Int, False), BinOp(Operator(0, "="), x, Int(2))])) != Int(2)):
+        print("Basic evaluation of equality failed")
         return -1
-
-    if (evaluate(Seq([Declare(x, nil(), Int, False), BinOp("=", x, BinOp("*", Int(3), Int(6)))]))) != Int(18):
-        print("Basic evaluation of PRINT failed")
-        return -1
-    
-    if (evaluate(str_concat(Str("abc"), str_concat(Str("ABC"), Str("XYZ"))))) != Str("abcABCXYZ"):
-        print("Basic evaluation of PRINT failed")
+    if (evaluate(Seq([Declare(identifier_x, nil(), Int, False), BinOp(Operator(0, "="), x, BinOp(Operator(0, "*"), Int(3), Int(6)))]))) != Int(18):
+        print("Basic evaluation of equality failed")
         return -1
     
     print("All test cases passed")

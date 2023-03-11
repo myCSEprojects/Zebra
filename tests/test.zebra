@@ -1,7 +1,0 @@
- int i = 1;
- if (i < 0){
-      zout(0);
- }
- else if(i == 1){
-      zout(1);
- }

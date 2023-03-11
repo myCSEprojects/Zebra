@@ -192,7 +192,7 @@ class BinOp:
 
     @staticmethod
     def raiseTypeError(operator, firstOperand, secondOperand):
-        typeCheckError(f"Operator {operator} not defined for operands of type {(firstOperand)} and {(secondOperand)}.", operator.lineNumber)
+        typeCheckError(f"Operator {operator.val} not defined for operands of type {(firstOperand)} and {(secondOperand)}.", operator.lineNumber)
 
     @staticmethod
     def checkSameType(operator, firstOperand, secondOperand):
@@ -215,7 +215,7 @@ class UnOp:
 
     @staticmethod
     def raiseTypeError(operator, operand):
-        typeCheckError(f"Operator {operator} not defined for the operand of type {(operand)}.", operator.lineNumber)
+        typeCheckError(f"Operator {operator.val} not defined for the operand of type {(operand)}.", operator.lineNumber)
 
     @staticmethod
     def checkType(operator, operand, operandType):

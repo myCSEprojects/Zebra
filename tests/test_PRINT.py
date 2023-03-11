@@ -7,17 +7,17 @@ def test():
         exit()
     print()
 
-    if (evaluate(PRINT([PRINT([BinOp("*", Int(10), Int(10)),Int(20)], " "), PRINT([Int(30),Int(40)], " ")]))) != nil():
+    if (evaluate(PRINT([BinOp(Operator(0, "*"), Int(10), Int(10)),Int(20), Int(30),Int(40)]))) != nil():
         print("Basic evaluation of PRINT failed")
         exit()
     print()
 
-    if (evaluate(PRINT(Int(10), PRINT(Int(30),BinOp("+", Int(10), Int(10)))))) != nil():
+    if (evaluate(PRINT([Int(10), Int(30),BinOp(Operator(0, "+"), Int(10), Int(10))]))) != nil():
         print("Basic evaluation of PRINT failed")
         exit()
     print()
 
-    if (evaluate(PRINT([PRINT(Int(50),PRINT(Int(10),Int(20))), PRINT(BinOp("-", Int(10), Int(20)),Int(40))]))) != nil():
+    if (evaluate(PRINT([Int(50),Int(10),Int(20), BinOp(Operator(0, "-"), Int(10), Int(20)),Int(40)]))) != nil():
         print("Basic evaluation of PRINT failed")
         exit()
     print()

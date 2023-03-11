@@ -1,18 +1,16 @@
 from dataclasses import dataclass
 from fractions import Fraction
 from typing import Union, Optional, List, Dict
+from lexer import Keyword, Operator, Identifier
+from error import RuntimeError, typeCheckError
 
 @dataclass
 class Variable:
     '''
-    Variable class containing the name of the variable further
-    evaluating to a data type in python
-
-    dtype : Contains the data type of the variable
-
-    isConst : Denotes mutability of value
+    Variable class containing the name of the variable
     '''
     name: str
+
 @dataclass
 class nil:
     noval = None
@@ -63,10 +61,10 @@ class Slice:
 
 # Defined binary operators in the Language
 BINARY_OPERATORS = [
-                    "+", "/", "-", "//", "*", "%", "^", "-",     # Binary operators for numbers
+                    "+", "/", "-", "//", "*", "%", "^", "-",    # Binary operators for numbers
                     "<<", ">>", "&", "|",                       # Bitwise binary operators for numbers
                     "<=", "<", ">", ">=", "==", "~=",           # Binary operators for Number types(similar)
-                    "&&", "||"  , "="                                # Binary operators for Booleans
+                    "&&", "||"  , "="                           # Binary operators for Booleans
 ]
 
 # Defined unary operators in the language
@@ -82,9 +80,9 @@ class Declare:
     '''
     Declaration class
     '''
-    var: Variable
+    var: Identifier
     value: 'AST'
-    dtype: str
+    dtype: type
     isConst: bool
 
 @dataclass
@@ -139,32 +137,31 @@ class Scopes:
         assert(len(self.stack) != 0)
         self.stack.pop()
     
-    def declareVariable(self, var: Variable, value: 'AST', dtype:str, isConst: bool):
+    def declareVariable(self, var: Identifier, value: 'AST', dtype:type, isConst: bool):
         '''
         Only declares a variable in the current scope
         '''
         assert(len(self.stack) != 0)
-
-        self.stack[-1][var.name] = [value, dtype, isConst]
+        self.stack[-1][var.val] = [value, dtype, isConst]
     
     def updateVariable(self, name: str, value: 'AST'):
-        
+        '''
+        Utility to update the variable in the closest scope
+        '''
         for i in range(len(self.stack)-1, -1, -1):
             if name in self.stack[i]:
+                
                 # Truthify if lvalue is of type Bool
                 if (issubclass(self.stack[i][name][1], Bool)):
                     value = Bool.truthy(value)
+                
                 self.stack[i][name][0] = value
                 return value
-        
-        InvalidProgram(Exception(f"Could not find the variable {name}."))
 
     def getVariable(self, name: str):
         for i in range(len(self.stack)-1, -1, -1):
             if name in self.stack[i]:
                 return self.stack[i][name][0]
-        
-        InvalidProgram(Exception(f"Could not resolve the variable {name}."))
 
 @dataclass
 class Block:
@@ -178,7 +175,7 @@ class BinOp:
     '''
     Variable evaluting to the value of the binary operation
     '''
-    operator: str
+    operator: Operator
     firstOperand: 'AST'
     secondOperand: 'AST'
 
@@ -195,11 +192,11 @@ class BinOp:
 
     @staticmethod
     def raiseTypeError(operator, firstOperand, secondOperand):
-        raise Exception(f"Operator {operator} not defined for operands of type {(firstOperand)} and {(secondOperand)}.")
+        typeCheckError(f"Operator {operator.val} not defined for operands of type {(firstOperand)} and {(secondOperand)}.", operator.lineNumber)
 
     @staticmethod
     def checkSameType(operator, firstOperand, secondOperand):
-        if ((firstOperand) != (secondOperand)):
+        if (not issubclass((firstOperand),(secondOperand))):
             BinOp.raiseTypeError(operator, firstOperand, secondOperand)
 
     @staticmethod
@@ -214,20 +211,16 @@ class UnOp:
     Variable evaluating to the value of the unary operation 
     '''
     operand: 'AST'
-    operator: str
+    operator: Operator
 
     @staticmethod
     def raiseTypeError(operator, operand):
-        InvalidProgram(Exception(f"Operator {operator} not defined for the operand of type {(operand)}."))
+        typeCheckError(f"Operator {operator.val} not defined for the operand of type {(operand)}.", operator.lineNumber)
 
     @staticmethod
     def checkType(operator, operand, operandType):
         if (not issubclass(operand,operandType)):
             UnOp.raiseTypeError(operator, operand)
-@dataclass
-class none:
-    noval: None
-
 @dataclass
 class PRINT:
     print_stmt: List['AST']
@@ -244,13 +237,11 @@ class For:
     condition : 'AST'
     block: 'AST'
 
+# Defining the AST
 AST = Variable|BinOp|Bool|Int|Float|Declare|If|UnOp|Str|str_concat|Slice|nil|PRINT|Seq|For
 
 # Defining a Number as both an integer as  well as Float
 Number = Float|Int
-
-def InvalidProgram(exception ) -> None:
-    raise exception
 
 def evaluate(program: AST, scopes: Scopes = None):
     '''
@@ -292,13 +283,10 @@ def evaluate(program: AST, scopes: Scopes = None):
             
             secondOperand = evaluate(secondOperand, scopes)
             
-            if(operator != "="):
+            if(operator.val != "="):
                 firstOperand = evaluate(firstOperand, scopes)
-
-            if (operator not in BINARY_OPERATORS):
-                InvalidProgram(Exception(f"Operator {operator} not reconized"))
             
-            match operator:
+            match operator.val:
                 case "+":
                     firstOperand, secondOperand = BinOp.implicitIntToFloat(firstOperand, secondOperand)
                     
@@ -309,6 +297,7 @@ def evaluate(program: AST, scopes: Scopes = None):
 
                 case "-":
                     firstOperand, secondOperand = BinOp.implicitIntToFloat(firstOperand, secondOperand)
+                    
                     if (isinstance(firstOperand, Float)):
                         return Float(firstOperand.value - secondOperand.value)
                     else:
@@ -316,7 +305,7 @@ def evaluate(program: AST, scopes: Scopes = None):
                 
                 case "/":
                     if (secondOperand == Int(0) or secondOperand == Float(0)):
-                        InvalidProgram(Exception("Cannot divide with zero."))
+                        RuntimeError("Cannot divide with zero.", operator.lineNumber)
                     return Float(firstOperand.value / secondOperand.value)
                 
                 case "*":
@@ -340,7 +329,7 @@ def evaluate(program: AST, scopes: Scopes = None):
                 
                 case "//" :
                     if (secondOperand == Int(0) or secondOperand == Float(0)):
-                        InvalidProgram(Exception("Cannot divide with zero."))
+                        RuntimeError("Cannot divide with zero.", operator.lineNumber)
                     return Int(int(firstOperand.value / secondOperand.value))
                 
                 case "%":
@@ -348,12 +337,12 @@ def evaluate(program: AST, scopes: Scopes = None):
                 
                 case "<<":
                     if (secondOperand.value < 0):
-                        InvalidProgram(Exception(f"Negative left operand not allowed for {operator}."))
+                        RuntimeError(f"Negative left operand not allowed for {operator}.", operator.lineNumber)
                     return Int(firstOperand.value << secondOperand.value)
                 
                 case ">>":
                     if (secondOperand.value < 0):
-                        InvalidProgram(Exception(f"Negative left operand not allowed for {operator}."))
+                        RuntimeError(f"Negative left operand not allowed for {operator}.", operator.lineNumber)
                     return Int(firstOperand.value >> secondOperand.value)
                 
                 case "&":
@@ -390,22 +379,18 @@ def evaluate(program: AST, scopes: Scopes = None):
 
         case UnOp(operator, operand):
             operand = evaluate(operand, scopes)
-            match operator:
+            match operator.val:
                 case "-":
-                    # UnOp.checkType(operator, operand, Number)
-
                     # Returning Literal similar to the operand literal
                     if (isinstance(operand, Float)):
                         return Float(operand.value * -1)
                     elif (isinstance(operand, Int)):
                         return Int(operand.value * -1)
                 case "~":
-                    # UnOp.checkType(operator, operand, Bool)
-                    return Bool(not operand.value)
+                    evaluated_operand = Bool.truthy(operand.value)
+                    return Bool(not evaluated_operand.value)
         
         case Declare(var, value, dtype, isConst):
-            if (not isinstance(var, Variable)):
-                InvalidProgram(Exception("RHS of declaration must be of type \'Variable\'"))
             
             # Evaluating the expression before declaration
             value = evaluate(value, scopes)
@@ -421,8 +406,7 @@ def evaluate(program: AST, scopes: Scopes = None):
 
         case If (condition, ifBlock, elseBlock):
             evaluated_condition = Bool.truthy(evaluate(condition, scopes))
-            if (not isinstance(evaluated_condition, Bool)):
-                InvalidProgram(Exception(f"The condition {condition} does not evaluate to a boolean type"))
+            
             if (evaluated_condition.value):
                 return evaluate(ifBlock, scopes)
             else:
@@ -431,20 +415,21 @@ def evaluate(program: AST, scopes: Scopes = None):
                 else:
                     return Bool(False)
 
-        case str_concat(left,right):
+        # case str_concat(left,right):
             
-            elem1 = evaluate(left, scopes)
-            elem2 = evaluate(right, scopes)
-            if (not(isinstance(elem1,Str) and isinstance(elem2,Str))):
-                InvalidProgram(Exception("Arguments passed to str_concat() must be of 'Str' type"))
-            return Str(elem1.value+elem2.value)
+        #     elem1 = evaluate(left, scopes)
+        #     elem2 = evaluate(right, scopes)
+        #     if (not(isinstance(elem1,Str) and isinstance(elem2,Str))):
+        #         InvalidProgram(Exception("Arguments passed to str_concat() must be of 'Str' type"))
+        #     return Str(elem1.value+elem2.value)
 
 
         case Slice(value_, first, second):
             elem = evaluate(value_, scopes)
 
             if (first>second or first < 0 or second > len(elem.value)):
-                InvalidProgram(Exception("Invalid index"))
+                raise Exception("Index out of bounds")
+            
             return Str(elem.value[first:second])
         
         case PRINT(print_stmt, end):
@@ -477,15 +462,14 @@ def evaluate(program: AST, scopes: Scopes = None):
                 return evaluate(While(condition,block),scopes)
             else :
                 return Bool(False)
+        
         case For(initial,condition,block) :
             # evaluating the initialization and declaration condition
             if (initial != nil()) :
                 evaluate(initial,scopes)
             return evaluate(While(condition,block),scopes)
-        
-
     
         # Handling unknown expressions
         case _:
-            InvalidProgram(Exception("Expression Invalid"))
+            raise Exception("Expression|Statement Invalid")
 

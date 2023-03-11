@@ -2,6 +2,7 @@ import sys
 from parser import *
 from typechecking import *
 from sim import *
+from error import RuntimeException
 import readline
 
 # Global error flag also takes care of exceptions
@@ -19,49 +20,34 @@ def executeFile(path: str):
             stream = ''.join(file.readlines()).strip()
     # In case the given file location is invalid
     except:
-        InvalidProgram(Exception(f"Specified file at {path} does not exist!"));
-    execute(stream)
+        print(f"Specified file at {path} does not exist!")
+        exit(-1)
+    
+    execute(stream, TypecheckerScopes(), Scopes())
 
-def execute(stream: str):
-    '''
-    Execute a given string
-    '''
+def execute(stream:str, typecheckerScopes: TypecheckerScopes, scopes: Scopes):
     global isError
-    # Parsing the given string
-    programAST, isError = parse(stream)
-    
-    # Exiting in case of parsing errors
-    if (isError):
-        return nil()
-    
-    # Perform type checking for the produced ast
-    typecheck(programAST)
-    
-    if (not isError):
-        # Try to execute in case of no runtime errors
-        try:
-            output = evaluate(programAST)
-            return output
-        # Catching all runtime exceptions
-        except Exception as e:
+    try: 
+        programAST, isError = parse(stream) # any ParseError in the stream would be caught in the parse function and the error flag would be set
+        # Exiting if there were any errors during parsing
+        if (isError):
             return nil()
-    return nil()
-
-def executeInteractive(stream:str, typecheckerScopes: TypecheckerScopes, scopes: Scopes):
-    global isError
-    if (not isError):
-        try: 
-            programAST, isError = parse(stream)
-            print(programAST)
-            # Exiting if there were any errors during parsing
-            if (isError):
-                return
-            typecheck(programAST, typecheckerScopes)
+        
+        # Performing typechecking
+        isError = typecheckAST(programAST, typecheckerScopes) # any TypecheckError in the stream would be caught in the typecheckAST function and the error flag would be set
+        # Exiting if there were any errors during typechecking
+        if (isError):
+            return nil()
+        # Catching any runtime errors
+        output = nil()
+        try:
             output = evaluate(programAST, scopes)
-            return output
-        except Exception as e:
-            # An uncaught expression for development purpose
-            raise e
+        except RuntimeException as e:
+            isError = True
+        return output
+    except Exception as e:
+        # An uncaught expression for development purpose (Due to unhandled cases in the parser)
+        raise e
     return nil()
 
 def interactiveShell():
@@ -100,7 +86,7 @@ def interactiveShell():
                 break
             
             # Executing the lines
-            output = executeInteractive(lines, typecheckerScopes, scopes)
+            output = execute(lines, typecheckerScopes, scopes)
             
             # Printing new line after each line
             print()

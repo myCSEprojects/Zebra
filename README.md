@@ -320,10 +320,9 @@ $$atom  \rightarrow  Identifier ~~ | ~~ Int ~~ | ~~ Bool ~~ | ~~ String ~~ | ~~ 
 5. For checking the data type we are typechecking the value which is assigned to it. The variable datatype is Int if it is assigned Integer,
     and it is Str if the variable is assigned String.
 
-To be done:
+To be done and Updates:
 1. refactor code    
 2. Comment code
-3. Implement errors
 4. Complete the test files
 5. Implement the resolver pass
 6. Update the for loop for scopes
@@ -331,8 +330,17 @@ To be done:
 8. PRINT test cases not fixed
 9. Adding a synchronize method to the parser class.
 10. Add Line number feature to the tokens
+11. Open an issue for << operator
+12. UNOP add exceptions
+13. Removed the boolean typechecking in IF 
+14. Removed the variable accessing errors in evaluation -> yet to add a resolver pass(but present in type checking)
+15. Replacing the var in Declare class to a identifier token(Helps in raising the error)
+16. Think of way to introduce tokens in Slice function
+# Errors
 
-# Error Recovery 
+We report the Error type, its message and its line number.
+
+We also perform error recovery in case of parsing and lexing to catch as many errors as possible.
 
 ## During parsing
 We use panic mode error recovery for errors during parse errors.
@@ -340,3 +348,8 @@ We use panic mode error recovery for errors during parse errors.
 When we encounter an error inside parsing we report the error, set the `isError` flag to `True` and synchronize the parser to the next statement or the end of file.
 
 This prevents cascading of errors and is fast enough.
+
+## Runtime Errors
+
+We raise the Runtime errors and exit the program.
+> **_Note_**: Add tokens to BINOP, UNOP, Declare, Slice

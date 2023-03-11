@@ -1,13 +1,7 @@
 from fractions import Fraction
 from dataclasses import dataclass
 from typing import Optional, NewType
-from error import Error
-
-class TokenException(Exception):
-    '''
-    Class for raising the TokenException to be caught by the parseProgram
-    '''
-    pass
+from error import TokenError
 
 class EndOfStream(Exception):
     pass
@@ -68,7 +62,7 @@ class Boolean(Token):
 
 @dataclass 
 class EOF:
-    pass
+    val = None
 
 Integer | Boolean | Keyword | Identifier | Operator | Flt
 
@@ -105,19 +99,6 @@ class Lexer:
                 self.advance()
                 return
             self.advance()
-
-    def TokenError(self, message_: str, lineNumber: int, type_: str="TokenError"):
-        '''
-        Way to report Token Error
-        '''
-        # Reporting the error
-        Error(type_ , message_, lineNumber).report()
-
-        # Synchronizing the lexer
-        self.synchronize()
-
-        # Raising the parseException to be caught using parse program
-        raise TokenException
 
     def from_stream(s):
         return Lexer(s)
@@ -238,7 +219,7 @@ class Lexer:
             return self.advance()
         
         # Report the corresponding token error and raise token exception
-        self.TokenError(f"Expected a '{expected.val}'", self.lineNumber)
+        TokenError(self, f"Expected a '{expected.val}'", self.lineNumber)
 
     def __iter__(self):
         return self

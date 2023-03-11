@@ -3,34 +3,15 @@ from dataclasses import dataclass
 from typing import Optional, NewType
 from sim import *
 from lexer import *
-from error import Error
+from error import ParseError, ParseException, TokenException
 
 # Global value denoting if the Parse Error occured
 isParseError = False
-
-class ParseException(Exception):
-    '''
-    Class for parse exception to be caught by parse_program
-    '''
-    pass
 
 @dataclass
 class Parser:
     
     lexer: Lexer # Lexer to produce the tokens
-    
-    def ParseError(self, message_: str, lineNumber: int, type_: str="ParseError"):
-        '''
-        Way to report Parse Error
-        '''
-        # Reporting the error
-        Error(type_ , message_, lineNumber).report()
-
-        # Synchronizing the lexer
-        self.lexer.synchronize()
-
-        # Raising the parseException to be caught using parse program
-        raise ParseException
 
     def from_lexer(lexer):
         return Parser(lexer)
@@ -147,14 +128,14 @@ class Parser:
                 self.lexer.match(Operator(0, ')'))
                 return l
             case other:
-                self.ParseError("Expected an Expression!", other.lineNumber)
+                ParseError(self, "Expected an Expression!", other.lineNumber)
     
     def parse_unary(self):
         op = self.lexer.peek_token()
         if(op.val in ["~","-"]) :
             self.lexer.advance()
             right = self.parse_unary()
-            return UnOp(right,op.val)
+            return UnOp(right,op)
         return self.parse_atom()
     
     def parse_mult(self):
@@ -164,7 +145,7 @@ class Parser:
                 case Operator(lineNumber, op) if op in "*/":
                     self.lexer.advance()
                     m = self.parse_unary()
-                    left = BinOp(op, left, m)
+                    left = BinOp(Operator(lineNumber, op), left, m)
                 case _:
                     break
         return left
@@ -176,7 +157,7 @@ class Parser:
                 case Operator(lineNumber, op) if op in ["+","-"]:
                     self.lexer.advance()
                     m = self.parse_mult()
-                    left = BinOp(op, left, m)
+                    left = BinOp(Operator(lineNumber, op), left, m)
                 case _:
                     break
         return left
@@ -184,7 +165,7 @@ class Parser:
     def parse_comparision(self):
         left = self.parse_add()
         while(isinstance(self.lexer.peek_token(), Operator) and self.lexer.peek_token().val in ["<",">",">=","<="]):
-            op = self.lexer.peek_token().val
+            op = self.lexer.peek_token()
             self.lexer.advance()
             right = self.parse_add()
             left =  BinOp(op, left, right)
@@ -196,32 +177,35 @@ class Parser:
             t = self.lexer.peek_token()
             self.lexer.advance()
             right = self.parse_comparision()
-            left = BinOp(t.val,left,right)
+            left = BinOp(t,left,right)
         return left
     
     def parse_logic_and(self) :
         left = self.parse_equality()
         while(self.lexer.peek_token().val == "&&"):
+            op = self.lexer.peek_token()
             self.lexer.advance()
             right = self.parse_equality()
-            left = BinOp("&&",left,right)
+            left = BinOp(op,left,right)
         return left
     
     def parse_logic_or(self) :
         left = self.parse_logic_and()
         while(self.lexer.peek_token().val == "||" ) :
+            op = self.lexer.peek_token()
             self.lexer.advance()
             right = self.parse_logic_and()
-            left = BinOp('||',left,right)
+            left = BinOp(op,left,right)
         return left
     
     def parse_assign(self):
         l = self.parse_logic_or()
         a = self.lexer.peek_token()
         if (a.val == "=") :
+            op = self.lexer.peek_token()
             self.lexer.advance()
             t = self.parse_assign()
-            return BinOp("=",l,t)
+            return BinOp(op,l,t)
         return l
     
     def parse_expr(self):
@@ -255,50 +239,50 @@ class Parser:
                 self.lexer.match(Keyword(0, "int"))
                 b = self.lexer.peek_token()
                 if(b.val in keywords or b.val in dtypes or b.val in ["true","false"]):
-                    self.ParseError("Expected a '=' or ';'", lineNumber)
+                    ParseError(self, "Expected a '=' or ';'", lineNumber)
                 self.lexer.match(b)
                 if(self.lexer.peek_token().val != "="):
                     self.lexer.match(Operator(0, ";"))
-                    return Declare(Variable(b.val), nil(), Int, found)
+                    return Declare(b, nil(), Int, found)
                 self.lexer.match(Operator(0, "="))
                 ans=self.parse_expr_stmt()
-                return Declare(Variable(b.val),ans, Int, found)
+                return Declare(b,ans, Int, found)
             case Keyword(lineNumber, "float"):
                 self.lexer.match(Keyword(0, "float"))
                 b=self.lexer.peek_token()
                 if(b.val in keywords or b.val in dtypes or b.val in ["true","false"]):
-                    self.ParseError("Expected a '=' or ';'", lineNumber)
+                    ParseError(self, "Expected a '=' or ';'", lineNumber)
                 self.lexer.match(b)
                 if(self.lexer.peek_token().val != "="):
                     self.lexer.match(Operator(";"))
-                    return Declare(Variable(b.val),nil(), Float, found)
+                    return Declare(b,nil(), Float, found)
                 self.lexer.match(Operator(0, "="))
                 ans=self.parse_expr_stmt()
-                return Declare(Variable(b.val),ans, Float, found)
+                return Declare(b,ans, Float, found)
             case Keyword(lineNumber, "string"):
                 self.lexer.match(Keyword(0, "string"))
                 b=self.lexer.peek_token()
                 if(b.val in keywords or b.val in dtypes or b.val in ["true","false"]):
-                    self.ParseError("Expected a '=' or ';'", lineNumber)
+                    ParseError(self, "Expected a '=' or ';'", lineNumber)
                 self.lexer.match(b)
                 if(self.lexer.peek_token().val != "="):
                     self.lexer.match(Operator(";"))
-                    return Declare(Variable(b.val),nil(), Str, found)
+                    return Declare(b,nil(), Str, found)
                 self.lexer.match(Operator(0,"="))
                 ans=self.parse_expr_stmt()
-                return Declare(Variable(b.val),ans, Str , found)
+                return Declare(b,ans, Str , found)
             case Keyword(lineNumber, "boolean"):
                 self.lexer.match(Keyword(0, "boolean"))
                 b=self.lexer.peek_token()
                 if(b.val in keywords or b.val in dtypes or b.val in ["true","false"]):
-                    self.ParseError("Expected a '=' or ';'", lineNumber)
+                    ParseError(self, "Expected a '=' or ';'", lineNumber)
                 self.lexer.match(b)
                 if(self.lexer.peek_token().val !="="):
                     self.lexer.match(Operator(0, ";"))
-                    return Declare(Variable(b.val),nil(), Bool, found)
+                    return Declare(b,nil(), Bool, found)
                 self.lexer.match(Operator(0, "="))
                 ans=self.parse_expr_stmt()
-                return Declare(Variable(b.val),ans, Bool , found)
+                return Declare(b,ans, Bool , found)
             
     def parse_declare(self):
         if(self.lexer.peek_token().val not in dtypes):

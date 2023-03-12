@@ -73,6 +73,30 @@ UNARY_OPERATORS = [
                     "~"  # Unary operator for Boolean types
 ]
 
+@dataclass
+class zList:
+    dtype : type
+    elements : list
+
+@dataclass
+class list_append:
+    element : 'AST'
+    list_name : Identifier
+
+@dataclass
+class list_remove:
+    index : Int
+    list_name : Identifier
+
+@dataclass 
+class list_len:
+    list_name : Identifier
+
+@dataclass 
+class list_insert:
+    index : Int
+    element : 'AST'
+    list_name : Identifier
 
 # Basic Operations
 @dataclass
@@ -238,7 +262,7 @@ class For:
     block: 'AST'
 
 # Defining the AST
-AST = Variable|BinOp|Bool|Int|Float|Declare|If|UnOp|Str|str_concat|Slice|nil|PRINT|Seq|For
+AST = Variable|BinOp|Bool|Int|Float|Declare|If|UnOp|Str|str_concat|Slice|nil|PRINT|Seq|For|zList
 
 # Defining a Number as both an integer as  well as Float
 Number = Float|Int
@@ -391,14 +415,17 @@ def evaluate(program: AST, scopes: Scopes = None):
                     return Bool(not evaluated_operand.value)
         
         case Declare(var, value, dtype, isConst):
-            
             # Evaluating the expression before declaration
-            value = evaluate(value, scopes)
-
+            if (dtype == zList):
+                if (value != nil()):
+                    for i in range(len(value.elements)):
+                        value.elements[i]=evaluate(value.elements[i], scopes)
+            else:
+                value = evaluate(value, scopes)
+            
             # Truthify if Bool dtype
             if (dtype == Bool):
                 value = Bool.truthy(value)
-
             # Declaring
             scopes.declareVariable(var, value, dtype, isConst)
 
@@ -428,7 +455,7 @@ def evaluate(program: AST, scopes: Scopes = None):
             elem = evaluate(value_, scopes)
 
             if (first>second or first < 0 or second > len(elem.value)):
-                raise Exception("Index out of bounds")
+                RuntimeError("Index out of bounds", None, "indexError")
             
             return Str(elem.value[first:second])
         
@@ -468,7 +495,30 @@ def evaluate(program: AST, scopes: Scopes = None):
             if (initial != nil()) :
                 evaluate(initial,scopes)
             return evaluate(While(condition,block),scopes)
-    
+        
+        case list_append(element, list_name):
+            l = scopes.getVariable(list_name.val)
+            element=evaluate(element, scopes)
+            l.elements.append(element)
+            return nil()
+        
+        case list_remove(index , list_name):
+            l=scopes.getVariable(list_name.val)
+            # Checking if the index is out of bounds
+            if (len(l.elements) <= index.value):
+                RuntimeError(f"list index out of bounds", None, 'indexError')
+            return l.elements.pop(index.value)
+        
+        case list_len(list_name):
+            l=scopes.getVariable(list_name.val)
+            return Int(len(l.elements))
+        
+        case list_insert(index, element, list_name):
+            l = scopes.getVariable(list_name.val)
+            element=evaluate(element, scopes)
+            l.elements.insert(index.value, element)
+            return nil()
+
         # Handling unknown expressions
         case _:
             raise Exception("Expression|Statement Invalid")

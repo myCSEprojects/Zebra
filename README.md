@@ -336,6 +336,9 @@ To be done and Updates:
 14. Removed the variable accessing errors in evaluation -> yet to add a resolver pass(but present in type checking)
 15. Replacing the var in Declare class to a identifier token(Helps in raising the error)
 16. Think of way to introduce tokens in Slice function
+17. sep and end features to add in parser of zout
+18. string_concat parser
+19. line numbers for errors
 # Errors
 
 We report the Error type, its message and its line number.

@@ -317,7 +317,50 @@ class Parser:
         else:
             lst = zList(dtypes[i], self.empty_list_type(dtypes, i+1))
         return lst
-            
+    
+    def parse_fundec(self):
+        self.lexer.match(Keyword(0,"func"))
+
+        if self.lexer.peek_token().val not in dtypes:
+            ParseError(self, f"Expected a data type but given {self.lexer.peek_token().val}", lineNumber)
+        
+        r = self.lexer.peek_token()
+        r_type = dtypes_dict[r.val]
+        self.lexer.advance()
+
+        func = self.lexer.peek_token()
+        self.lexer.advance()
+        self.lexer.match(Operator(0,"("))
+
+        param_types = []
+        params = []
+        while (self.lexer.peek_token() != Operator(0,")")) :
+            dt = self.lexer.peek_token()
+            if self.lexer.peek_token().val not in dtypes:
+                ParseError(self, f"Expected a data type but given {self.lexer.peek_token().val}", lineNumber)
+
+            param_types.append(dtypes_dict[dt.val])
+            self.lexer.advance()
+
+            iden = self.lexer.peek_token()
+            self.lexer.advance()
+            params.append(iden)
+
+            if self.lexer.peek_token().val == ',':
+                self.lexer.advance()
+
+        self.lexer.match(Operator(0,")"))
+
+        func_block = nil()
+        if self.lexer.peek_token().val == ";" :
+            self.lexer.advance()
+        else :
+            func_block = self.parse_block()
+        
+
+        return DeclareFun(func , r_type, param_types,params,func_block)
+        
+    
     def parse_vardec(self):
         
         found=None
@@ -405,7 +448,9 @@ class Parser:
                 return Declare(b,ans, Bool , found)
             
     def parse_declare(self):
-        if(self.lexer.peek_token().val not in dtypes):
+        if self.lexer.peek_token().val == "func" :
+            return self.parse_fundec()
+        elif(self.lexer.peek_token().val not in dtypes):
             return self.parse_statement()
         else:
             return self.parse_vardec()
@@ -435,8 +480,9 @@ def parse(string):
     ), isParseError
 
 def test_parse():
-    print(parse("list int a = [1,2,3]; append(2,a) remove(2,a) insert(0,100,a) length(a)")) 
+    # print(parse("list int a = [1,2,3]; append(2,a) remove(2,a) insert(0,100,a) length(a)")) 
     # print(parse("append(2,a)"))
+    print(parse("func int add(int a,int b) { a+b;}"))
 
 if __name__ == "__main__" :
     test_parse()

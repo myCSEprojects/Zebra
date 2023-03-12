@@ -47,6 +47,15 @@ class TypecheckerScopes:
         if (issubclass(ltype, zList)):
             self.stack[-1][var.val].append(list_dtype)
     
+    def declareFun(self, f, fn_object):
+        #declares the function in the current scope with the give name v
+        assert(len(self.stack) != 0)
+
+        if f.val in self.stack[-1]:
+            raise Exception(f"Redeclaring already declared function {f.val}")
+        
+        self.stack[-1][f.val] = [fn_object, FnObject, False]
+    
     def updateVariable(self, name: str, rtype: 'AST'):
         '''
         Utility to update the variable with the given name
@@ -293,6 +302,36 @@ def typecheck(program: AST, scopes = None):
                 typeCheckError(f"index must be an integer.", None)
             elif not (issubclass(element, lType)):
                 typeCheckError(f"Cannot append an element of type {element} to a list of type {lType}.", None)
+                
+        case DeclareFun(Identifier(lineNumber, _) as f, return_type, params_type, params, body):
+            scopes.declareFun(f, FnObject(params_type, params, body, return_type)) 
+
+        case FunCall(Identifier(lineNumber, _) as f, args): 
+            fn = scopes.getVariable(f.val)
+            argv = []
+
+            for arg in args:
+                argv.append(typecheck(arg, scopes))
+
+            scopes.beginScope()
+            
+            for param, arg in zip(fn.params, argv):
+                scopes.declareVariable(param,arg(None),arg,False)
+
+            p_types = fn.params_types
+
+            for len_ in range(len(p_types)):
+                if (not(issubclass(p_types[len_],(argv[len_])))):
+                    raise Exception(f" {len_+1}th Argument passed to the function is of invalid type")
+
+            ret_type = fn.return_type 
+            eval_type = typecheck(fn.body,scopes)
+
+            if (not(issubclass(eval_type,ret_type))):
+                raise Exception("Invalid type returned by the function")
         
+            scopes.endScope()
+            return ret_type
+
         case _:
             raise Exception("Type checking failed.")

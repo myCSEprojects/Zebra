@@ -137,10 +137,10 @@ class Scopes:
         assert(len(self.stack) != 0)
         self.stack.pop()
         
-    def declareFun(self, v, fn_object):
+    def declareFun(self, f, fn_object):
         #declares the function in the current scope with the give name v
         assert(len(self.stack) != 0)
-        self.stack[-1][v.name] = [fn_object, FnObject, False]
+        self.stack[-1][f.val] = [fn_object, FnObject, False]
     
     def declareVariable(self, var: Identifier, value: 'AST', dtype:type, isConst: bool):
         '''
@@ -245,7 +245,8 @@ class For:
 @dataclass
 class DeclareFun:
     name: 'AST'
-    params: List['AST']
+    params_type : List[type]
+    params: List[Identifier]
     body: 'AST'
 
 @dataclass
@@ -255,11 +256,12 @@ class FunCall:
 
 @dataclass
 class FnObject:
-    params: List['AST']
+    params_types: List[type]
+    params: List[Identifier]
     body: 'AST'
     
 # Defining the AST
-AST = Variable|BinOp|Bool|Int|Float|Declare|If|UnOp|Str|str_concat|Slice|nil|PRINT|Seq|For
+AST = Variable|BinOp|Bool|Int|Float|Declare|If|UnOp|Str|str_concat|Slice|nil|PRINT|Seq|For|DeclareFun|FunCall
 
 # Defining a Number as both an integer as  well as Float
 Number = Float|Int
@@ -490,28 +492,26 @@ def evaluate(program: AST, scopes: Scopes = None):
                 evaluate(initial,scopes)
             return evaluate(While(condition,block),scopes)
         
-        case DeclareFun(Variable(_) as v, params, body):
-            scopes.declareFun(v, FnObject(params, body))
-        
+        case DeclareFun(Identifier(lineNumber, _) as f, params_type, params, body):
+            scopes.declareFun(f, FnObject(params_type, params, body))
 
-        case FunCall(Variable(_) as v, args):
-            
-            fn = scopes.getVariable(v.name)
-            #print(fn)
+        case FunCall(Identifier(lineNumber, _) as f, args): 
+            fn = scopes.getVariable(f.val)
             argv = []
+
             for arg in args:
-                argv.append(evaluate(arg,scopes))
+                argv.append(evaluate(arg, scopes))
 
             scopes.beginScope()
 
             for param, arg in zip(fn.params, argv):
                 scopes.declareVariable(param,arg,'AST',False)
         
+            returnVal = evaluate(fn.body, scopes)
 
-            v = evaluate(fn.body, scopes)
             scopes.endScope()
 
-            return v
+            return returnVal
     
         # Handling unknown expressions
         case _:

@@ -27,7 +27,7 @@ def executeFile(path: str):
         print(f"Specified file at {path} does not exist!")
         exit(-1)
     
-    execute(stream, TypecheckerScopes(), Scopes())
+    execute(stream, Scopes(), Scopes())
 
 def execute(stream:str, typecheckerScopes: TypecheckerScopes, scopes: Scopes):
     global isError
@@ -36,7 +36,6 @@ def execute(stream:str, typecheckerScopes: TypecheckerScopes, scopes: Scopes):
         # Exiting if there were any errors during parsing
         if (isError):
             return nil()
-        print(programAST)
         # Performing typechecking
         isError = typecheckAST(programAST, typecheckerScopes) # any TypecheckError in the stream would be caught in the typecheckAST function and the error flag would be set
         # Exiting if there were any errors during typechecking
@@ -65,7 +64,7 @@ def interactiveShell():
     scopes = Scopes()
 
     # Creating scopes for typechecking
-    typecheckerScopes = TypecheckerScopes()
+    typecheckerScopes = Scopes()
 
     try:
         while True:

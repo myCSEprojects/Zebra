@@ -269,6 +269,7 @@ class For:
 @dataclass
 class DeclareFun:
     name: 'AST'
+    return_type: type
     params_type : List[type]
     params: List[Identifier]
     body: 'AST'
@@ -283,6 +284,7 @@ class FnObject:
     params_types: List[type]
     params: List[Identifier]
     body: 'AST'
+    return_type: type
     
 # Defining the AST
 AST = Variable|BinOp|Bool|Int|Float|Declare|If|UnOp|Str|str_concat|Slice|nil|PRINT|Seq|For|DeclareFun|FunCall|zList|list_append|list_insert|list_len|list_remove
@@ -542,8 +544,8 @@ def evaluate(program: AST, scopes: Scopes = None):
             l.elements.insert(index.value, element)
             return nil()
 
-        case DeclareFun(Identifier(lineNumber, _) as f, params_type, params, body):
-            scopes.declareFun(f, FnObject(params_type, params, body))
+        case DeclareFun(Identifier(lineNumber, _) as f, return_type, params_type, params, body):
+            scopes.declareFun(f, FnObject(params_type, params, body, return_type))
 
         case FunCall(Identifier(lineNumber, _) as f, args): 
             fn = scopes.getVariable(f.val)

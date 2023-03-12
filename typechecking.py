@@ -22,14 +22,14 @@ class TypecheckerScopes:
         else:
             self.stack = stack
     
-    def beginScope(self):
+    def beginScope(self): 
         self.stack.append({})
     
     def endScope(self):
         assert(len(self.stack) != 0)
         self.stack.pop()
     
-    def declareVariable(self, var: Identifier, rtype: 'AST', ltype:'AST', isConst: bool):
+    def declareVariable(self, var: Identifier, rtype: 'AST', ltype:'AST', isConst: bool, list_dtype: None):
         '''
         Only declares a variable in the current scope
         '''
@@ -37,11 +37,15 @@ class TypecheckerScopes:
 
         # Avoiding redeclaration in the same scope
         if var.val in self.stack[-1]:
-            raise Exception(f"Redeclaring already declared variable {var.val}")
+            typeCheckError(f"Redeclaring already declared variable {var.val}", var.lineNumber, 'declareError')
         if (rtype != ltype):
-            raise Exception(f"Cannot initialize {ltype} with Literal of dtype {rtype}.")
+            typeCheckError(f"Cannot initialize {ltype} with Literal of dtype {rtype}.", var.lineNumber)
 
         self.stack[-1][var.val] = [ltype, isConst]
+
+        # Adding another list_dtype field to the scopes
+        if (issubclass(ltype, zList)):
+            self.stack[-1][var.val].append(list_dtype)
     
     def updateVariable(self, name: str, rtype: 'AST'):
         '''
@@ -63,7 +67,7 @@ class TypecheckerScopes:
         '''
         for i in range(len(self.stack)-1, -1, -1):
             if name in self.stack[i]:
-                return self.stack[i][name][0]
+                return self.stack[i][name]
         
         raise Exception(f"Could not resolve the variable {name}.")
 
@@ -81,6 +85,15 @@ def typecheckAST(program: AST, scopes: TypecheckerScopes):
         isTypeCheckError = True
     return isTypeCheckError
 
+# def typecheckList(lst: zList, lineNumber: int):
+#     print(zList.__doc__())
+#     for element in lst.elements:
+#         element_ret = typecheck(element)
+#         if not issubclass(element_ret, lst.dtype):
+#             typeCheckError(f"Cannot initialize a list of type {lst.dtype} with element of type {type(element)}.", lineNumber)
+#         if isinstance(element_ret, zList):
+#             typecheckList(element, lineNumber)
+
 def typecheck(program: AST, scopes = None):
     if (scopes == None):
         scopes = TypecheckerScopes()
@@ -92,11 +105,13 @@ def typecheck(program: AST, scopes = None):
         case Bool(): 
             return Bool
         case Variable(name):
-            return scopes.getVariable(name)
+            return scopes.getVariable(name)[0]
         case Str():
             return Str
         case nil():
             return nil
+        case zList(dtype, lst):
+            return zList
         case BinOp(operator, left, right):
             firstOperand = typecheck(left, scopes)
             secondOperand = typecheck(right, scopes)
@@ -184,13 +199,17 @@ def typecheck(program: AST, scopes = None):
             # Evaluating the expression before declaration
             value = typecheck(value, scopes)
 
+            # Make sure all the elements of the list are of the type zList.dtype
+            if (dtype == zList):
+                typecheckList(value, var.lineNumber)
+
             # Declaring
             scopes.declareVariable(var, dtype, value, isConst)
-            return value
+            return dtype
 
         case Slice(value_, first, second):       #checking value_ is string 
             tc = typecheck(value_, scopes)
-            if (not(issubclass(tc, Str))):
+            if (not(issubclass(tc, Str | zList))):
                 raise Exception("Arguments passed to Slice must be of 'Str' type")
             return Str
 
@@ -220,10 +239,47 @@ def typecheck(program: AST, scopes = None):
             for line in lines:
                 ret = typecheck(line, scopes)
             return ret
+        
         case PRINT(exps):
             for exp in exps:
                 if (not isinstance(exp, AST)):
                     raise Exception(f"Invalid expression {exp} in PRINT")
             return nil
+        
+        case list_append(element, list_name):
+            l = scopes.getVariable(list_name.val)
+            element=typecheck(element)
+            if not(issubclass(l[0], zList)):
+                typeCheckError(f"Cannot append an element of type {type(element)} to a {l[0]}.", None)
+            elif l[1]:
+                typeCheckError(f"Cannot append an element to a constant list.", None, "constError")
+            elif not (isinstance(element, l[2])):
+                typeCheckError(f"Cannot append an element of type {type(element)} to a list of type {l[2]}.", None)
+        
+        case list_remove(index, list_name):
+            l = scopes.getVariable(list_name.val)
+            if not(issubclass(l[0], zList)):
+                typeCheckError(f"Cannot remove an element from {l[0]}.", None)
+            elif l[1]:
+                typeCheckError(f"Cannot remove an element from a constant list.", None, "constError")
+            
+        case list_len(list_name):
+            l = scopes.getVariable(list_name.val)
+            if not(issubclass(l[0], zList)):
+                typeCheckError(f"Cannot remove an element from {l[0]}.", None)
+        
+        case list_insert(index, element, list_name):
+            l = scopes.getVariable(list_name.val)
+            element=typecheck(element)
+            index=typecheck(index)
+            if not(issubclass(l[0], zList)):
+                typeCheckError(f"Cannot append an element of type {type(element)} to a {l[0]}.", None)
+            elif l[1]:
+                typeCheckError(f"Cannot append an element to a constant list.", None, "constError")
+            elif not (isinstance(index, Int)):
+                typeCheckError(f"index must be an integer.", None)
+            elif not (isinstance(element, l[2])):
+                typeCheckError(f"Cannot append an element of type {type(element)} to a list of type {l[2]}.", None)
+        
         case _:
             raise Exception("Type checking failed.")

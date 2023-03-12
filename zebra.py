@@ -3,7 +3,11 @@ from parser import *
 from typechecking import *
 from sim import *
 from error import RuntimeException
-import readline
+try:
+    import readline
+except:
+    from pyreadline3 import Readline
+    readline = Readline()
 
 # Global error flag also takes care of exceptions
 isError = False
@@ -32,7 +36,7 @@ def execute(stream:str, typecheckerScopes: TypecheckerScopes, scopes: Scopes):
         # Exiting if there were any errors during parsing
         if (isError):
             return nil()
-        
+        print(programAST)
         # Performing typechecking
         isError = typecheckAST(programAST, typecheckerScopes) # any TypecheckError in the stream would be caught in the typecheckAST function and the error flag would be set
         # Exiting if there were any errors during typechecking

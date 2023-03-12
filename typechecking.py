@@ -85,18 +85,17 @@ def typecheckAST(program: AST, scopes: TypecheckerScopes):
         isTypeCheckError = True
     return isTypeCheckError
 
-# def typecheckList(lst: zList, lineNumber: int):
-#     print(zList.__doc__())
-#     for element in lst.elements:
-#         element_ret = typecheck(element)
-#         if not issubclass(element_ret, lst.dtype):
-#             typeCheckError(f"Cannot initialize a list of type {lst.dtype} with element of type {type(element)}.", lineNumber)
-#         if isinstance(element_ret, zList):
-#             typecheckList(element, lineNumber)
+def typecheckList(lst: zList, lineNumber: int):
+    for element in lst.elements:
+        element_ret = typecheck(element)
+        if not issubclass(element_ret, lst.dtype):
+            typeCheckError(f"Cannot initialize a list of type {lst.dtype} with element of type {type(element)}.", lineNumber)
+        if isinstance(element_ret, zList):
+            typecheckList(element, lineNumber)
 
 def typecheck(program: AST, scopes = None):
     if (scopes == None):
-        scopes = TypecheckerScopes()
+        scopes = Scopes()
     match program:
         case Float(): 
             return Float
@@ -105,7 +104,7 @@ def typecheck(program: AST, scopes = None):
         case Bool(): 
             return Bool
         case Variable(name):
-            return scopes.getVariable(name)[0]
+            return scopes.getVariableType(name)
         case Str():
             return Str
         case nil():
@@ -173,7 +172,11 @@ def typecheck(program: AST, scopes = None):
                     
                     BinOp.checkSameType(operator, firstOperand, secondOperand|nil)
                     
-                    scopes.updateVariable(left.name, secondOperand)
+                    # Prevent assignment for lists (for now)
+                    if (issubclass(secondOperand, zList)):
+                        typeCheckError(f"Cannot assign a list to a variable.", operator.lineNumber)
+
+                    scopes.updateVariable(left.name, secondOperand(None))
                     return secondOperand
 
         case UnOp(operator, operand):   
@@ -195,16 +198,16 @@ def typecheck(program: AST, scopes = None):
         case Declare(var, value, dtype, isConst):
             if (not isinstance(var, Identifier)):
                 raise Exception("RHS of declaration must be of type \'Identifier\'")
-            
-            # Evaluating the expression before declaration
-            value = typecheck(value, scopes)
 
             # Make sure all the elements of the list are of the type zList.dtype
             if (dtype == zList):
                 typecheckList(value, var.lineNumber)
-
-            # Declaring
-            scopes.declareVariable(var, dtype, value, isConst)
+                scopes.declareVariable(var, value, dtype, isConst)
+            else:
+                # Evaluating the expression before declaration
+                value = typecheck(value, scopes)
+                # Declaring
+                scopes.declareVariable(var, dtype, value(None), isConst)
             return dtype
 
         case Slice(value_, first, second):       #checking value_ is string 
@@ -242,44 +245,54 @@ def typecheck(program: AST, scopes = None):
         
         case PRINT(exps):
             for exp in exps:
-                if (not isinstance(exp, AST)):
+                exp = typecheck(exp, scopes)
+                # Make sure that the user does not ask for printing a list
+                if (issubclass(exp, zList)):
+                    typeCheckError(f"Cannot print a list.", None, "notPrintable")
+                if (not issubclass(exp, AST)):
                     raise Exception(f"Invalid expression {exp} in PRINT")
             return nil
         
         case list_append(element, list_name):
-            l = scopes.getVariable(list_name.val)
+            var_type = scopes.getVariableType(list_name.val)
+            lIsConst = scopes.getVariableIsConst(list_name.val)
+            lType = scopes.getVariable(list_name.val).dtype
             element=typecheck(element)
-            if not(issubclass(l[0], zList)):
-                typeCheckError(f"Cannot append an element of type {type(element)} to a {l[0]}.", None)
-            elif l[1]:
+            if not(issubclass(var_type, zList)):
+                typeCheckError(f"Cannot append an element of type {(element)} to a {var_type}.", None)
+            elif lIsConst:
                 typeCheckError(f"Cannot append an element to a constant list.", None, "constError")
-            elif not (isinstance(element, l[2])):
-                typeCheckError(f"Cannot append an element of type {type(element)} to a list of type {l[2]}.", None)
+            elif not (issubclass(element, lType)):
+                typeCheckError(f"Cannot append an element of type {(element)} to a list of type {lType}.", None)
         
         case list_remove(index, list_name):
-            l = scopes.getVariable(list_name.val)
-            if not(issubclass(l[0], zList)):
-                typeCheckError(f"Cannot remove an element from {l[0]}.", None)
-            elif l[1]:
+            var_type = scopes.getVariableType(list_name.val)
+            lIsConst = scopes.getVariableIsConst(list_name.val)
+            if not(issubclass(var_type, zList)):
+                typeCheckError(f"Cannot remove an element from {var_type}.", None)
+            elif lIsConst:
                 typeCheckError(f"Cannot remove an element from a constant list.", None, "constError")
             
         case list_len(list_name):
-            l = scopes.getVariable(list_name.val)
-            if not(issubclass(l[0], zList)):
-                typeCheckError(f"Cannot remove an element from {l[0]}.", None)
+            varType = scopes.getVariableType(list_name.val)
+            if not(issubclass(varType, zList)):
+                typeCheckError(f"Cannot remove an element from {varType}.", None)
+            return Int
         
         case list_insert(index, element, list_name):
-            l = scopes.getVariable(list_name.val)
+            var_type = scopes.getVariableType(list_name.val)
+            lIsConst = scopes.getVariableIsConst(list_name.val)
+            lType = scopes.getVariable(list_name.val).dtype
             element=typecheck(element)
             index=typecheck(index)
-            if not(issubclass(l[0], zList)):
-                typeCheckError(f"Cannot append an element of type {type(element)} to a {l[0]}.", None)
-            elif l[1]:
+            if not(issubclass(var_type, zList)):
+                typeCheckError(f"Cannot append an element of type {element} to a {var_type}.", None)
+            elif lIsConst:
                 typeCheckError(f"Cannot append an element to a constant list.", None, "constError")
-            elif not (isinstance(index, Int)):
+            elif not (issubclass(index, Int)):
                 typeCheckError(f"index must be an integer.", None)
-            elif not (isinstance(element, l[2])):
-                typeCheckError(f"Cannot append an element of type {type(element)} to a list of type {l[2]}.", None)
+            elif not (issubclass(element, lType)):
+                typeCheckError(f"Cannot append an element of type {element} to a list of type {lType}.", None)
         
         case _:
             raise Exception("Type checking failed.")

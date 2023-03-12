@@ -154,6 +154,24 @@ class Parser:
     def parse_atom(self):
         match self.lexer.peek_token():
             case Identifier(lineNumber, name):
+                i = self.lexer.peek_token()
+                self.lexer.advance()
+                params = []
+                if(self.lexer.peek_token().val == "("):
+                    self.lexer.advance()
+                    while(self.lexer.peek_token().val != ")"):
+                        iden = self.lexer.peek_token()
+                        self.lexer.advance()
+                        params.append(iden)
+
+                        if self.lexer.peek_token().val == ',':
+                            self.lexer.advance()
+
+                    self.lexer.match(Operator(0,")"))
+                            
+                    return FunCall(i, params)
+                else:
+                    return Variable(name)
                 self.lexer.advance()
                 return Variable(name)
             case Integer(lineNumber, value):

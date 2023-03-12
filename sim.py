@@ -136,6 +136,11 @@ class Scopes:
     def endScope(self):
         assert(len(self.stack) != 0)
         self.stack.pop()
+        
+    def declareFun(self, v, fn_object):
+        #declares the function in the current scope with the give name v
+        assert(len(self.stack) != 0)
+        self.stack[-1][v.name] = [fn_object, FnObject, False]
     
     def declareVariable(self, var: Identifier, value: 'AST', dtype:type, isConst: bool):
         '''
@@ -236,7 +241,23 @@ class For:
     initial : 'AST'
     condition : 'AST'
     block: 'AST'
+        
+@dataclass
+class DeclareFun:
+    name: 'AST'
+    params: List['AST']
+    body: 'AST'
 
+@dataclass
+class FunCall:
+    fn: 'AST'
+    args: List['AST']
+
+@dataclass
+class FnObject:
+    params: List['AST']
+    body: 'AST'
+    
 # Defining the AST
 AST = Variable|BinOp|Bool|Int|Float|Declare|If|UnOp|Str|str_concat|Slice|nil|PRINT|Seq|For
 
@@ -468,6 +489,29 @@ def evaluate(program: AST, scopes: Scopes = None):
             if (initial != nil()) :
                 evaluate(initial,scopes)
             return evaluate(While(condition,block),scopes)
+        
+        case DeclareFun(Variable(_) as v, params, body):
+            scopes.declareFun(v, FnObject(params, body))
+        
+
+        case FunCall(Variable(_) as v, args):
+            
+            fn = scopes.getVariable(v.name)
+            #print(fn)
+            argv = []
+            for arg in args:
+                argv.append(evaluate(arg,scopes))
+
+            scopes.beginScope()
+
+            for param, arg in zip(fn.params, argv):
+                scopes.declareVariable(param,arg,'AST',False)
+        
+
+            v = evaluate(fn.body, scopes)
+            scopes.endScope()
+
+            return v
     
         # Handling unknown expressions
         case _:

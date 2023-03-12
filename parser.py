@@ -387,14 +387,14 @@ class Parser:
             self.lexer.match(l)
             found=True
         elif l.val == "list":
-            dtypes = []
+            dtypes_ = []
             self.lexer.advance()
             while(self.lexer.peek_token().val == "list"):
-                dtypes.append(zList)
+                dtypes_.append(zList)
                 self.lexer.advance()
             if (self.lexer.peek_token().val not in dtypes_dict):
                 ParseError(self, "Expected data type.", self.lexer.peek_token().lineNumber)
-            dtypes.append(dtypes_dict[self.lexer.peek_token().val])
+            dtypes_.append(dtypes_dict[self.lexer.peek_token().val])
             self.lexer.advance()
             if (not isinstance(self.lexer.peek_token(), Identifier)):
                 ParseError(self, "Expected Identifier.", self.lexer.peek_token().lineNumber)
@@ -405,11 +405,11 @@ class Parser:
                 self.lexer.advance()
                 lst = self.parse_expr()
                 try:
-                    self.set_list_type(dtypes, 0, lst)
+                    self.set_list_type(dtypes_, 0, lst)
                 except:
                     ParseError(self, f"Dimensions of the given list and initializer list do not match", self.lexer.peek_token().lineNumber)
             else:
-                lst = self.empty_list_type(dtypes, 0)
+                lst = self.empty_list_type(dtypes_, 0)
             self.lexer.match(Operator(0, ";"))
             return Declare(var, lst, zList, False)
 

@@ -23,27 +23,31 @@ class Parser:
     def from_lexer(lexer):
         return Parser(lexer)
     
-    def parse_if(self):
-        self.lexer.match(Keyword(0, "if"))
-        self.lexer.match(Operator(0, "("))
-        c = self.parse_expr()
-        self.lexer.match(Operator(0, ")"))
-        self.lexer.match(Operator(0, "{"))
-        ifseq=[]
-        while(self.lexer.peek_token().val != "}") :
+    def parse_block(self):
+        self.lexer.match(Operator(0,"{"))
+        block_seq = []
+        while(self.lexer.peek_token().val != "}" ):
             t = self.parse_declare()
-            ifseq.append(t)
+            block_seq.append(t)
         self.lexer.match(Operator(0,"}"))
+        return Seq(block_seq)
+    
+
+    def parse_if(self):
+        self.lexer.match(Keyword(0,"if"))
+        self.lexer.match(Operator(0,"("))
+        c = self.parse_expr()
+        self.lexer.match(Operator(0,")"))
+        if_block = self.parse_block()
         if(self.lexer.peek_token().val != "else"):
-            return If(c, Seq(ifseq), None)
-        self.lexer.match(Keyword(0, "else"))
-        self.lexer.match(Operator(0, "{"))
-        elseq=[]
-        while(self.lexer.peek_token().val != "}") :
-            t = self.parse_declare()
-            elseq.append(t)
-        self.lexer.match(Operator(0, "}"))
-        return If(c,Seq(ifseq), Seq(elseq))
+            return If(c,if_block,None)
+        self.lexer.match(Keyword(0,"else"))
+        if (self.lexer.peek_token().val == "if") :
+            else_block = self.parse_if()
+        else :
+            else_block = self.parse_block()
+        
+        return If(c,if_block, else_block)
 
     def parse_for(self):
         self.lexer.match(Keyword(0, "for"))
@@ -66,19 +70,11 @@ class Parser:
             order = self.parse_expr()
 
         self.lexer.match(Operator(0, ")"))
-        self.lexer.match(Operator(0, "{"))
 
-
-        forseq = []
-        while(self.lexer.peek_token().val != "}") :
-            t = self.parse_declare()
-            forseq.append(t)
-        self.lexer.match(Operator(0, "}"))
-
+        for_block = self.parse_block()
         if (order != nil()):
-            forseq.append(order)
-            
-        return For(initial,condition,Seq(forseq))
+            for_block.lines.append(order)
+        return For(initial,condition,for_block)
         
     
     def parse_while(self):
@@ -86,13 +82,8 @@ class Parser:
         self.lexer.match(Operator(0, "("))
         c = self.parse_expr()
         self.lexer.match(Operator(0, ")"))
-        self.lexer.match(Operator(0, "{"))
-        wseq=[]
-        while(self.lexer.peek_token().val != "}") :
-            t = self.parse_declare()
-            wseq.append(t)
-        self.lexer.match(Operator(0, "}"))
-        return While(c, Seq(wseq))
+        w_block = self.parse_block()
+        return While(c, w_block)
     
     def parse_print(self):
         self.lexer.match(Keyword(0, "zout"))
@@ -299,6 +290,8 @@ class Parser:
                 return self.parse_len()
             case Keyword(lineNumber, "insert"):
                 return self.parse_insert()
+            case Keyword(lineNumber,"{") :
+                return self.parse_block()
             case _:
                 return self.parse_expr_stmt()
     

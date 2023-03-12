@@ -285,9 +285,10 @@ The Operator Precedence from lowest to highest.
 **The Context Free Grammar of our language:**
 $$~program  \rightarrow  (declaration)^*~~ EOF$$
 $$declaration  \rightarrow  vardec  ~~ | ~~ statement$$
-$$statement  \rightarrow  expression ~ Statement ~ | ~ print ~ Statement ~ | ~ if ~ Statement ~ | ~ while ~ Statement ~ | ~ for ~ Statement$$
+$$statement  \rightarrow  expression ~ Statement ~ | ~ print ~ Statement ~ | ~ if ~ Statement ~ | ~ while ~ Statement ~ | ~ for ~ Statement  | block $$
 $$vardec \rightarrow  "var" ~~ identifier ~~ ( ~ "=" ~ expression) ~ ? ~ ";"$$
 $$while ~ Statement  \rightarrow  "while" ~~ "(" ~~ expression ~~ ")" ~~ "\{" ~~ declaration ~~ "\}" ~~ $$
+$$block ~ \rightarrow "\{" ~~ (declaration)^* ~~ "\}" $$
 $$if ~ Statement  \rightarrow  "if" ~~ "(" ~~ expression ~~ ")" ~~ "\{" ~~ declaration ~~ "\}" ~~ ("else" ~~ "\{" ~~ declaration ~~ "\}")? ~~ $$
 $$print ~ Statement  \rightarrow  "zout" ~ "("~ expression ~ ")" ~ ";"$$
 $$for ~ Statement  \rightarrow  "for" ~ "("( ~ vardec ~ | ~ expression ~ Statement ~ | ~ ";") ~~ expression? ~~ ";" ~ expression? ~ ")" ~statement$$

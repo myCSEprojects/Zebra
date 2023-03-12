@@ -337,6 +337,11 @@ def evaluate(program: AST, scopes: Scopes = None):
             
             match operator.val:
                 case "+":
+                    #code for string concatenation starts
+                    if (isinstance(firstOperand, Str) and isinstance(secondOperand, Str)):
+                        return Str(firstOperand.value + secondOperand.value)
+                    #code for string concatenation ends
+                    
                     firstOperand, secondOperand = BinOp.implicitIntToFloat(firstOperand, secondOperand)
                     
                     if (isinstance(firstOperand, Float)):

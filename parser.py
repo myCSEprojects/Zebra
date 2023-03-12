@@ -108,6 +108,7 @@ class Parser:
             ParseError(f"Expected an identifier", l.lineNumber)
         self.lexer.advance()
         self.lexer.match(Operator(0,")"))
+        self.lexer.match(Operator(0,";"))
         return list_append(ele, l)
     
     def parse_remove(self):
@@ -120,6 +121,7 @@ class Parser:
             ParseError(f"Expected an identifier", l.lineNumber)
         self.lexer.advance()
         self.lexer.match(Operator(0,")"))
+        self.lexer.match(Operator(0,";"))
         return list_remove(index, l)
     
     def parse_len(self):
@@ -144,6 +146,7 @@ class Parser:
             ParseError(f"Expected an identifier", l.lineNumber)
         self.lexer.advance()
         self.lexer.match(Operator(0,")"))
+        self.lexer.match(Operator(0,";"))
         return list_insert(index, ele, l)
     
     def parse_expr_stmt(self):
@@ -214,6 +217,8 @@ class Parser:
             self.lexer.advance()
             right = self.parse_unary()
             return UnOp(right,op)
+        elif (op.val == "length"):
+            return self.parse_len()
         return self.parse_atom()
     
     def parse_mult(self):

@@ -13,7 +13,7 @@ class Variable:
 
 @dataclass
 class nil:
-    noval = None
+    pass
 # Basic Data Types
 @dataclass
 class Int:
@@ -188,9 +188,28 @@ class Scopes:
                 return value
 
     def getVariable(self, name: str):
+        '''
+        Utility to get the value of the variable in the closest scope
+        '''
         for i in range(len(self.stack)-1, -1, -1):
             if name in self.stack[i]:
                 return self.stack[i][name][0]
+    
+    def getVariableType(self, name: str):
+        '''
+          Utility to get the type of the variable in the closest scope
+        '''
+        for i in range(len(self.stack)-1, -1, -1):
+            if name in self.stack[i]:
+                return self.stack[i][name][1]
+    
+    def getVariableIsConst(self, name: str):
+        '''
+        Utility to get the constness of the variable in the closest scope
+        '''
+        for i in range(len(self.stack)-1, -1, -1):
+            if name in self.stack[i]:
+                return self.stack[i][name][2]
 
 @dataclass
 class Block:
@@ -315,6 +334,9 @@ def evaluate(program: AST, scopes: Scopes = None):
             return program
 
         case nil():
+            return program
+        
+        case zList(dtype, value):
             return program
 
         case Block(blockStatements):

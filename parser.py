@@ -325,7 +325,7 @@ class Parser:
             ParseError(self, f"Expected a data type but given {self.lexer.peek_token().val}", lineNumber)
         
         r = self.lexer.peek_token()
-        r_type = dmap[r.val]
+        r_type = dtypes_dict[r.val]
         self.lexer.advance()
 
         func = self.lexer.peek_token()
@@ -339,7 +339,7 @@ class Parser:
             if self.lexer.peek_token().val not in dtypes:
                 ParseError(self, f"Expected a data type but given {self.lexer.peek_token().val}", lineNumber)
 
-            param_types.append(dmap[dt.val])
+            param_types.append(dtypes_dict[dt.val])
             self.lexer.advance()
 
             iden = self.lexer.peek_token()
@@ -358,7 +358,7 @@ class Parser:
             func_block = self.parse_block()
         
 
-        return DeclareFun(func , param_types,params,func_block)
+        return DeclareFun(func , r_type, param_types,params,func_block)
         
     
     def parse_vardec(self):
@@ -480,8 +480,9 @@ def parse(string):
     ), isParseError
 
 def test_parse():
-    print(parse("list int a = [1,2,3]; append(2,a) remove(2,a) insert(0,100,a) length(a)")) 
+    # print(parse("list int a = [1,2,3]; append(2,a) remove(2,a) insert(0,100,a) length(a)")) 
     # print(parse("append(2,a)"))
+    print(parse("func int add(int a,int b) { a+b;}"))
 
 if __name__ == "__main__" :
     test_parse()

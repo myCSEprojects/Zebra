@@ -15,6 +15,25 @@ dtypes_dict = {
     "string": Str, 
     "boolean": Bool
 }
+
+def get_AST_type(tk: Token):
+    '''
+    Utility to convert token types to AST values
+    '''
+    match tk:
+        case Integer(lineNumber, val):
+            return Int(val)
+        case Flt(lineNumber, val):
+            return Float(val)
+        case Boolean(lineNumber, val):
+            return Bool(val)
+        case String(lineNumber, val):
+            return Str(val)
+        case Identifier(lineNumber, val):
+            return Variable(val)
+        case _:
+            return nil()
+
 @dataclass
 class Parser:
     
@@ -30,7 +49,7 @@ class Parser:
             t = self.parse_declare()
             block_seq.append(t)
         self.lexer.match(Operator(0,"}"))
-        return Seq(block_seq)
+        return Block(Seq(block_seq))
     
 
     def parse_if(self):
@@ -73,7 +92,7 @@ class Parser:
 
         for_block = self.parse_block()
         if (order != nil()):
-            for_block.lines.append(order)
+            for_block.blockStatements.lines.append(order)
         return For(initial,condition,for_block)
         
     
@@ -163,8 +182,7 @@ class Parser:
                 if(self.lexer.peek_token().val == "("):
                     self.lexer.advance()
                     while(self.lexer.peek_token().val != ")"):
-                        iden = self.lexer.peek_token()
-                        self.lexer.advance()
+                        iden = self.parse_expr()
                         params.append(iden)
 
                         if self.lexer.peek_token().val == ',':
@@ -175,8 +193,7 @@ class Parser:
                     return FunCall(i, params)
                 else:
                     return Variable(name)
-                self.lexer.advance()
-                return Variable(name)
+                
             case Integer(lineNumber, value):
                 self.lexer.advance()
                 return Int(value)
@@ -225,7 +242,7 @@ class Parser:
         left = self.parse_unary()
         while True:
             match self.lexer.peek_token():
-                case Operator(lineNumber, op) if op in "*/":
+                case Operator(lineNumber, op) if op in "*/%":
                     self.lexer.advance()
                     m = self.parse_unary()
                     left = BinOp(Operator(lineNumber, op), left, m)
@@ -345,7 +362,7 @@ class Parser:
         self.lexer.match(Keyword(0,"func"))
 
         if self.lexer.peek_token().val not in dtypes:
-            ParseError(self, f"Expected a data type but given {self.lexer.peek_token().val}", lineNumber)
+            ParseError(self, f"Expected a data type but given {self.lexer.peek_token().val}", self.lexer.peek_token().lineNumber)
         
         r = self.lexer.peek_token()
         r_type = dtypes_dict[r.val]
@@ -357,10 +374,10 @@ class Parser:
 
         param_types = []
         params = []
-        while (self.lexer.peek_token() != Operator(0,")")) :
+        while (self.lexer.peek_token().val != ")") :
             dt = self.lexer.peek_token()
-            if self.lexer.peek_token().val not in dtypes:
-                ParseError(self, f"Expected a data type but given {self.lexer.peek_token().val}", lineNumber)
+            if dt.val not in dtypes:
+                ParseError(self, f"Expected a data type but given {self.lexer.peek_token().val}", self.lexer.peek_token().lineNumber)
 
             param_types.append(dtypes_dict[dt.val])
             self.lexer.advance()
@@ -505,7 +522,7 @@ def parse(string):
 def test_parse():
     # print(parse("list int a = [1,2,3]; append(2,a) remove(2,a) insert(0,100,a) length(a)")) 
     # print(parse("append(2,a)"))
-    print(parse("func int add(int a,int b) { a+b;}"))
-
+    print(parse("func int add(int a,int b) { a+b;} add(2, 3);"))
+    
 if __name__ == "__main__" :
     test_parse()

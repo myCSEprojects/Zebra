@@ -1,0 +1,11 @@
+list int a = [1,2,3];
+zout(length(a));
+
+append(2, a);
+zout(length(a));
+
+remove(1, a);
+zout(length(a));
+
+insert(1, 1, a);
+zout(length(a));

@@ -1,6 +1,6 @@
 from sim import *
 
-def test_fun():
+def test():
     a = Identifier(0,"a")
     b = Identifier(0,"b")   
     f = Identifier(0,"f")
@@ -30,4 +30,5 @@ def test_fun():
     if evaluate(g_,ss).value == 18 :
         print("Passed")
 
-test_fun()
+if __name__ == "__main__":
+    test()

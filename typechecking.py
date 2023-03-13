@@ -216,7 +216,7 @@ def typecheck(program: AST, scopes = None):
                 # Evaluating the expression before declaration
                 value = typecheck(value, scopes)
                 # Declaring
-                scopes.declareVariable(var, dtype, value(None), isConst)
+                scopes.declareVariable(var, value(None), dtype, isConst)
             return dtype
 
         case Slice(value_, first, second):       #checking value_ is string 

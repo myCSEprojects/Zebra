@@ -338,7 +338,7 @@ def typecheck(program: AST, scopes = None):
 
             # 2. Initialize all the params using a dummy object
             for param, param_type in zip(params, params_type):
-                scopes.declareVariable(param, createDummyObject(param_type))
+                scopes.declareVariable(param, createDummyObject(param_type), param_type, False)
 
             # 3. type check the body
             retType = typecheck(body, scopes)
@@ -367,6 +367,10 @@ def typecheck(program: AST, scopes = None):
 
             # Returning the return type of the function
             return fn.return_type
-
+        
+        case Block(blockStatements):
+            # Return the type of the last statement in the seq in block
+            return typecheck(blockStatements, scopes)
+        
         case _:
             raise Exception("Type checking failed.")

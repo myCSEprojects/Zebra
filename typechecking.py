@@ -82,6 +82,17 @@ class TypecheckerScopes:
 
 Number = Int | Float
 
+def createDummyObject(type_ : type):
+    '''
+    Utility to Create a dummy(useles) object from the given type
+    '''
+    if type_ == Int or type_ == Float or type_ == Bool or type_ == Str:
+        return Int(None)
+    elif type_ == nil:
+        return nil()
+    elif type_ == zList:
+        return zList(None, None)
+
 
 def typecheckAST(program: AST, scopes: TypecheckerScopes):
     '''
@@ -128,10 +139,20 @@ def typecheck(program: AST, scopes = None):
                 typeCheckError(f"Binary Operator {operator} not reconized", operator.lineNumber)
             
             match operator.val:
-                case "+" | "-":
+                case  "+":
+                    if (issubclass(firstOperand, Str)):
+                        BinOp.checkType(operator, firstOperand, secondOperand, Str, Str)
+                    else:
+                        BinOp.checkType(operator, firstOperand, secondOperand, Number, Number)
+                    
+                    if (isinstance(firstOperand, Float) or isinstance(secondOperand, Float)):
+                        return Float
+                    else:
+                        return Int
+                case  "-":
                     BinOp.checkType(operator, firstOperand, secondOperand, Number, Number)
                     
-                    if (isinstance(firstOperand, Float)):
+                    if (isinstance(firstOperand, Float) or isinstance(secondOperand, Float)):
                         return Float
                     else:
                         return Int
@@ -222,20 +243,20 @@ def typecheck(program: AST, scopes = None):
         case Slice(value_, first, second):       #checking value_ is string 
             tc = typecheck(value_, scopes)
             if (not(issubclass(tc, Str | zList))):
-                raise Exception("Arguments passed to Slice must be of 'Str' type")
-            return Str
+                typeCheckError("Arguments passed to Slice must be of {Str} | {zList} type", None)
+            return tc
 
         case While(condition,block) :            #checking while condition data type
             tc = typecheck(condition, scopes)
             if (not(issubclass(tc, AST))):
                 raise Exception("Arguments passed to While block must be of 'AST' type")
-            return nil
+            return typecheck(block, scopes)
         
         case If (condition, ifBlock, elseBlock): #checking if condition data type
             tc = typecheck(condition, scopes)
             if (not (issubclass(tc, AST))):
                 raise Exception("Arguments passed to If block must be of 'AST' type")
-            return nil
+            return typecheck(ifBlock, scopes) | typecheck(elseBlock, scopes)
 
         case For(initial,condition,block):
             tc1 =typecheck(initial, scopes)
@@ -244,7 +265,7 @@ def typecheck(program: AST, scopes = None):
             tc = typecheck(condition, scopes)
             if(not( issubclass(tc,AST))):
                 raise Exception("Arguments passes to For condition must be of 'AST' type")
-            return nil
+            return typecheck(block)
 
         case Seq(lines):
             ret = nil()
@@ -273,6 +294,7 @@ def typecheck(program: AST, scopes = None):
                 typeCheckError(f"Cannot append an element to a constant list.", None, "constError")
             elif not (issubclass(element, lType)):
                 typeCheckError(f"Cannot append an element of type {(element)} to a list of type {lType}.", None)
+            return nil()
         
         case list_remove(index, list_name):
             var_type = scopes.getVariableType(list_name.val)
@@ -281,6 +303,7 @@ def typecheck(program: AST, scopes = None):
                 typeCheckError(f"Cannot remove an element from {var_type}.", None)
             elif lIsConst:
                 typeCheckError(f"Cannot remove an element from a constant list.", None, "constError")
+            return var_type
             
         case list_len(list_name):
             varType = scopes.getVariableType(list_name.val)
@@ -302,36 +325,48 @@ def typecheck(program: AST, scopes = None):
                 typeCheckError(f"index must be an integer.", None)
             elif not (issubclass(element, lType)):
                 typeCheckError(f"Cannot append an element of type {element} to a list of type {lType}.", None)
-                
+            return nil()
+         
         case DeclareFun(Identifier(lineNumber, _) as f, return_type, params_type, params, body):
+            # Declaring the function in the current scope
             scopes.declareFun(f, FnObject(params_type, params, body, return_type)) 
 
-        case FunCall(Identifier(lineNumber, _) as f, args): 
-            fn = scopes.getVariable(f.val)
-            argv = []
+            # Strategy to type check the body
 
+            # 1. begin a new scope
+            scopes.beginScope()
+
+            # 2. Initialize all the params using a dummy object
+            for param, param_type in zip(params, params_type):
+                scopes.declareVariable(param, createDummyObject(param_type))
+
+            # 3. type check the body
+            retType = typecheck(body, scopes)
+
+            # 4. make sure that the return types are the same
+            if (not(issubclass(retType, return_type) and issubclass(retType, return_type))):
+                typeCheckError(f"Not returning the expected return type of the function", f.lineNumber)
+            
+            # 5. return nil as declaration statements have no return type
+            return nil
+        
+        case FunCall(Identifier(lineNumber, _) as f, args): 
+            # Get the function object
+            fn = scopes.getVariable(f.val)
+            
+            # Generate the type of arguments
+            argv = []
             for arg in args:
                 argv.append(typecheck(arg, scopes))
-
-            scopes.beginScope()
             
-            for param, arg in zip(fn.params, argv):
-                scopes.declareVariable(param,arg(None),arg,False)
-
+            # Only typechecking the param type and the argument types
             p_types = fn.params_types
+            for i in range(len(p_types)):
+                if (not(issubclass(p_types[i],(argv[i])))):
+                    raise Exception(f" {i+1}th Argument passed to the function is of invalid type")
 
-            for len_ in range(len(p_types)):
-                if (not(issubclass(p_types[len_],(argv[len_])))):
-                    raise Exception(f" {len_+1}th Argument passed to the function is of invalid type")
-
-            ret_type = fn.return_type 
-            eval_type = typecheck(fn.body,scopes)
-
-            if (not(issubclass(eval_type,ret_type))):
-                raise Exception("Invalid type returned by the function")
-        
-            scopes.endScope()
-            return ret_type
+            # Returning the return type of the function
+            return fn.return_type
 
         case _:
             raise Exception("Type checking failed.")

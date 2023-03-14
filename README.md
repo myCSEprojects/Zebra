@@ -278,7 +278,7 @@ language syntax:
 `list_append` : `append(element, list_name);`  
 `list_remove` : `remove(index, list_name);`  
 `list_insert` : `insert(index, element, list_name);`  
-`Slice` : `list_name[start:end]`  
+`Slice` : `slice list_name start:end`  
 `list_len` : `length(list_name)`
 
 ## Operator Precedence
@@ -325,7 +325,7 @@ mult &\rightarrow unary ~~ ( ~ ('/' ~ | ~ '*' ~ | ~ '\\%' ) ~ unary)^\* \\
 unary  &\rightarrow  ('!' ~ | ~ '-') ~ unary ~~ | ~~ atom ~~ | ~~ list ~ length\\
 list ~ length & \rightarrow 'length' ~~ '(' ~~ Indentifier ~~ ')' \\
 atom  &\rightarrow  Identifier ~~ | Identifier ~~ '(' ~~ (expression) ~~ * ~~ expression ~~ ')' ~~ \\
-&|~~ Int ~~ | ~~ Bool ~~ | ~~ String ~~ | ~~ Float ~~ | ~~ nil ~~ | ~~ '(' ~ expression ~ ')' \\
+&|~~ Int ~~ | ~~ Bool ~~ | ~~ String ~~ | ~~ Float ~~ | ~~ nil ~~ | ~~ '(' ~ expression ~ ')' ~~ | ~~ '[' ~ (expression ~ ',' ~ )^* ~ (expression)? ~ ']' ~~ | ~~ 'slice' ~~ expression ~~ expression:expression\\
 \end{align}
 $$
 

@@ -124,7 +124,7 @@ class Parser:
         self.lexer.match(Operator(0,","))
         l=self.lexer.peek_token()
         if not isinstance(l, Identifier):
-            ParseError(f"Expected an identifier", l.lineNumber)
+            ParseError(self, f"Expected an identifier", l.lineNumber)
         self.lexer.advance()
         self.lexer.match(Operator(0,")"))
         self.lexer.match(Operator(0,";"))
@@ -137,7 +137,7 @@ class Parser:
         self.lexer.match(Operator(0,","))
         l=self.lexer.peek_token()
         if not isinstance(l, Identifier):
-            ParseError(f"Expected an identifier", l.lineNumber)
+            ParseError(self, f"Expected an identifier", l.lineNumber)
         self.lexer.advance()
         self.lexer.match(Operator(0,")"))
         self.lexer.match(Operator(0,";"))
@@ -146,10 +146,7 @@ class Parser:
     def parse_len(self):
         self.lexer.match(Keyword(0, "length"))
         self.lexer.match(Operator(0, "("))
-        l=self.lexer.peek_token()
-        if not isinstance(l, Identifier):
-            ParseError(f"Expected an identifier", l.lineNumber)
-        self.lexer.advance()
+        l = self.parse_expr()
         self.lexer.match(Operator(0,")"))
         return list_len(l)
     
@@ -162,7 +159,7 @@ class Parser:
         self.lexer.match(Operator(0,","))
         l=self.lexer.peek_token()
         if not isinstance(l, Identifier):
-            ParseError(f"Expected an identifier", l.lineNumber)
+            ParseError(self, f"Expected an identifier", l.lineNumber)
         self.lexer.advance()
         self.lexer.match(Operator(0,")"))
         self.lexer.match(Operator(0,";"))
@@ -193,6 +190,15 @@ class Parser:
                     return FunCall(i, params)
                 else:
                     return Variable(name)
+                
+            case Keyword(lineNumber, "slice"):
+                self.lexer.advance()
+                val = self.parse_expr()
+                start = self.parse_expr()
+                self.lexer.match(Operator(0,":"))
+                end = self.parse_expr()
+                return Slice(val, start, end)
+                
                 
             case Integer(lineNumber, value):
                 self.lexer.advance()
@@ -517,9 +523,9 @@ def parse(string):
     ), isParseError
 
 def test_parse():
-    # print(parse("list int a = [1,2,3]; append(2,a) remove(2,a) insert(0,100,a) length(a)")) 
+    print(parse("list int a = [1,2,3]; append(2,a); remove(2,a); insert(0,100,a); a[0:2];")) 
     # print(parse("append(2,a)"))
-    print(parse("func int add(int a,int b) { a+b;} add(2, 3);"))
+    # print(parse("func int add(int a,int b) { a+b;} add(2, 3);"))
     
 if __name__ == "__main__" :
     test_parse()

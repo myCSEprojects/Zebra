@@ -266,8 +266,21 @@ $$Variable=Str  \rightarrow  Str$$
    `Int(0)`, `Float(0)`, `empty dictionary`, `empty string`, `nil`, `False`, `empty list`
    
    Every value other than these correspond to `True`.
-   
-   
+
+## Statically typed list
+
+List contains elements of only single specified type.  
+Can handle nested lists.  
+The list operations supported are: `list_append`, `list_remove`, `list_insert`, `Slice`, `list_len`    
+
+language syntax:   
+
+`list_append` : `append(element, list_name);`  
+`list_remove` : `remove(index, list_name);`  
+`list_insert` : `insert(index, element, list_name);`  
+`Slice` : `list_name[start:end]`  
+`list_len` : `length(list_name)`
+
 ## Operator Precedence
 
 The Operator Precedence from lowest to highest.

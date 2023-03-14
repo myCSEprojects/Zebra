@@ -8,7 +8,7 @@ def test():
     if (evaluate(str_concat(a,b)).value == "abcxyzpppabcxyz"):
         print("Test 1/3 Passed")
     a= evaluate(a)
-    if ( evaluate(Slice(Str("abc"),1,3)).value == "bc") : 
+    if ( evaluate(Slice(Str("abc"),Int(1),Int(3))).value == "bc") : 
         print("Test 2/3 Passed")
     if (evaluate(BinOp('*',Str('abc'),Int(3)))).value == 'abcabcabc':
         print("Test 3/3 Passed")

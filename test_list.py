@@ -14,6 +14,9 @@ def test():
     if (evaluate(Seq([Declare(x, zList(Str, [Str("hi")]),zList, False), list_insert(Int(0), Str("hello"),x), list_len(x)]))) != Int(2):
         print("Basic evaluation of list_insert failed")
         return -1
+    if (evaluate(Seq([Declare(x, zList(Int, [Int(1), Int(2),Int(3)]),zList, False), list_append(Int(100), x), Slice(Variable("x"),Int(1),Int(3))]))).elements[0] != Int(2):
+        print("Basic evaluation of list_slice failed")
+        return -1
     try:
         ast = Seq([Declare(x, zList(Str, [Str("hi")]),zList, False), list_insert(Int(0), Int(1000),x), list_len(x)])
         typecheck(ast)

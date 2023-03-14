@@ -325,7 +325,8 @@ mult &\rightarrow unary ~~ ( ~ ('/' ~ | ~ '*' ~ | ~ '\\%' ) ~ unary)^\* \\
 unary  &\rightarrow  ('!' ~ | ~ '-') ~ unary ~~ | ~~ atom ~~ | ~~ list ~ length\\
 list ~ length & \rightarrow 'length' ~~ '(' ~~ Indentifier ~~ ')' \\
 atom  &\rightarrow  Identifier ~~ | Identifier ~~ '(' ~~ (expression) ~~ * ~~ expression ~~ ')' ~~ \\
-&|~~ Int ~~ | ~~ Bool ~~ | ~~ String ~~ | ~~ Float ~~ | ~~ nil ~~ | ~~ '(' ~ expression ~ ')' ~~ | ~~ '[' ~ (expression ~ ',' ~ )^* ~ (expression)? ~ ']' ~~ | ~~ 'slice' ~~ expression ~~ expression:expression\\
+&|~~ Int ~~ | ~~ Bool ~~ | ~~ String ~~ | ~~ Float ~~ | ~~ nil ~~ | ~~ '(' ~ expression ~ ')' ~~ | ~~ '['(expression',')(expression)?']' ~~ \\
+&| ~ 'slice' ~~ expression ~~ expression:expression\\
 \end{align}
 $$
 

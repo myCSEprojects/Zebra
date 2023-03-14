@@ -492,16 +492,7 @@ def evaluate(program: AST, scopes: Scopes = None):
                 if (elseBlock != None): 
                     return evaluate(elseBlock, scopes)
                 else:
-                    return Bool(False)
-
-        # case str_concat(left,right):
-            
-        #     elem1 = evaluate(left, scopes)
-        #     elem2 = evaluate(right, scopes)
-        #     if (not(isinstance(elem1,Str) and isinstance(elem2,Str))):
-        #         InvalidProgram(Exception("Arguments passed to str_concat() must be of 'Str' type"))
-        #     return Str(elem1.value+elem2.value)
-
+                    return nil()
 
         case Slice(value_, first, second):
             elem = evaluate(value_, scopes)
@@ -544,9 +535,14 @@ def evaluate(program: AST, scopes: Scopes = None):
         
         case For(initial,condition,block) :
             # evaluating the initialization and declaration condition
+            scopes.beginScope()
+            # run the initial statement(should not effect outrer scope)
+            evaluate(initial,scopes)
             if (initial != nil()) :
                 evaluate(initial,scopes)
-            return evaluate(While(condition,block),scopes)
+            retVal = evaluate(While(condition,block),scopes)
+            scopes.endScope()
+            return retVal
         
         case list_append(element, list_name):
             l = scopes.getVariable(list_name.val)
@@ -573,6 +569,7 @@ def evaluate(program: AST, scopes: Scopes = None):
 
         case DeclareFun(Identifier(lineNumber, _) as f, return_type, params_type, params, body):
             scopes.declareFun(f, FnObject(params_type, params, body, return_type))
+            return nil()
 
         case FunCall(Identifier(lineNumber, _) as f, args): 
             fn = scopes.getVariable(f.val)

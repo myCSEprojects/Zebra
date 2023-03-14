@@ -82,6 +82,17 @@ class TypecheckerScopes:
 
 Number = Int | Float
 
+def createDummyObject(type_ : type):
+    '''
+    Utility to Create a dummy(useles) object from the given type
+    '''
+    if type_ == Int or type_ == Float or type_ == Bool or type_ == Str:
+        return type_(None)
+    elif type_ == nil:
+        return nil()
+    elif type_ == zList:
+        return zList(None, None)
+
 
 def typecheckAST(program: AST, scopes: TypecheckerScopes):
     '''
@@ -94,13 +105,13 @@ def typecheckAST(program: AST, scopes: TypecheckerScopes):
         isTypeCheckError = True
     return isTypeCheckError
 
-def typecheckList(lst: zList, lineNumber: int):
+def typecheckList(lst: zList, lineNumber: int, scopes:Scopes):
     for element in lst.elements:
-        element_ret = typecheck(element)
+        element_ret = typecheck(element, scopes)
         if not issubclass(element_ret, lst.dtype):
             typeCheckError(f"Cannot initialize a list of type {lst.dtype} with element of type {type(element)}.", lineNumber)
         if isinstance(element_ret, zList):
-            typecheckList(element, lineNumber)
+            typecheckList(element, lineNumber, scopes)
 
 def typecheck(program: AST, scopes = None):
     if (scopes == None):
@@ -128,10 +139,20 @@ def typecheck(program: AST, scopes = None):
                 typeCheckError(f"Binary Operator {operator} not reconized", operator.lineNumber)
             
             match operator.val:
-                case "+" | "-":
+                case  "+":
+                    if (issubclass(firstOperand, Str)):
+                        BinOp.checkType(operator, firstOperand, secondOperand, Str, Str)
+                    else:
+                        BinOp.checkType(operator, firstOperand, secondOperand, Number, Number)
+                    
+                    if (isinstance(firstOperand, Float) or isinstance(secondOperand, Float)):
+                        return Float
+                    else:
+                        return Int
+                case  "-":
                     BinOp.checkType(operator, firstOperand, secondOperand, Number, Number)
                     
-                    if (isinstance(firstOperand, Float)):
+                    if (isinstance(firstOperand, Float) or isinstance(secondOperand, Float)):
                         return Float
                     else:
                         return Int
@@ -210,7 +231,7 @@ def typecheck(program: AST, scopes = None):
 
             # Make sure all the elements of the list are of the type zList.dtype
             if (dtype == zList):
-                typecheckList(value, var.lineNumber)
+                typecheckList(value, var.lineNumber, scopes)
                 scopes.declareVariable(var, value, dtype, isConst)
             else:
                 # Evaluating the expression before declaration
@@ -222,32 +243,37 @@ def typecheck(program: AST, scopes = None):
         case Slice(value_, first, second):       #checking value_ is string 
             tc = typecheck(value_, scopes)
             if (not(issubclass(tc, Str | zList))):
-                raise Exception("Arguments passed to Slice must be of 'Str' type")
-            return Str
+                typeCheckError("Arguments passed to Slice must be of {Str} | {zList} type", None)
+            return tc
 
         case While(condition,block) :            #checking while condition data type
             tc = typecheck(condition, scopes)
             if (not(issubclass(tc, AST))):
                 raise Exception("Arguments passed to While block must be of 'AST' type")
-            return nil
+            return typecheck(block, scopes)
         
         case If (condition, ifBlock, elseBlock): #checking if condition data type
             tc = typecheck(condition, scopes)
             if (not (issubclass(tc, AST))):
                 raise Exception("Arguments passed to If block must be of 'AST' type")
-            return nil
+            return typecheck(ifBlock, scopes) | typecheck(elseBlock, scopes)
 
         case For(initial,condition,block):
+            scopes.beginScope()
+            
             tc1 =typecheck(initial, scopes)
             if(not(issubclass(tc1,AST))):
                 raise Exception("Arguments passes to For initial must be of 'AST' type")
             tc = typecheck(condition, scopes)
             if(not( issubclass(tc,AST))):
                 raise Exception("Arguments passes to For condition must be of 'AST' type")
-            return nil
+            retType = typecheck(block, scopes)
+            
+            scopes.endScope()
+            return retType
 
         case Seq(lines):
-            ret = nil()
+            ret = nil
             for line in lines:
                 ret = typecheck(line, scopes)
             return ret
@@ -266,13 +292,14 @@ def typecheck(program: AST, scopes = None):
             var_type = scopes.getVariableType(list_name.val)
             lIsConst = scopes.getVariableIsConst(list_name.val)
             lType = scopes.getVariable(list_name.val).dtype
-            element=typecheck(element)
+            element=typecheck(element,scopes)
             if not(issubclass(var_type, zList)):
                 typeCheckError(f"Cannot append an element of type {(element)} to a {var_type}.", None)
             elif lIsConst:
                 typeCheckError(f"Cannot append an element to a constant list.", None, "constError")
             elif not (issubclass(element, lType)):
                 typeCheckError(f"Cannot append an element of type {(element)} to a list of type {lType}.", None)
+            return nil
         
         case list_remove(index, list_name):
             var_type = scopes.getVariableType(list_name.val)
@@ -281,6 +308,7 @@ def typecheck(program: AST, scopes = None):
                 typeCheckError(f"Cannot remove an element from {var_type}.", None)
             elif lIsConst:
                 typeCheckError(f"Cannot remove an element from a constant list.", None, "constError")
+            return var_type
             
         case list_len(list_name):
             varType = scopes.getVariableType(list_name.val)
@@ -292,7 +320,7 @@ def typecheck(program: AST, scopes = None):
             var_type = scopes.getVariableType(list_name.val)
             lIsConst = scopes.getVariableIsConst(list_name.val)
             lType = scopes.getVariable(list_name.val).dtype
-            element=typecheck(element)
+            element=typecheck(element, scopes)
             index=typecheck(index)
             if not(issubclass(var_type, zList)):
                 typeCheckError(f"Cannot append an element of type {element} to a {var_type}.", None)
@@ -302,36 +330,52 @@ def typecheck(program: AST, scopes = None):
                 typeCheckError(f"index must be an integer.", None)
             elif not (issubclass(element, lType)):
                 typeCheckError(f"Cannot append an element of type {element} to a list of type {lType}.", None)
-                
+            return nil
+         
         case DeclareFun(Identifier(lineNumber, _) as f, return_type, params_type, params, body):
+            # Declaring the function in the current scope
             scopes.declareFun(f, FnObject(params_type, params, body, return_type)) 
 
-        case FunCall(Identifier(lineNumber, _) as f, args): 
-            fn = scopes.getVariable(f.val)
-            argv = []
+            # Strategy to type check the body
 
+            # 1. begin a new scope
+            scopes.beginScope()
+
+            # 2. Initialize all the params using a dummy object
+            for param, param_type in zip(params, params_type):
+                scopes.declareVariable(param, createDummyObject(param_type), param_type, False)
+
+            # 3. type check the body
+            retType = typecheck(body, scopes)
+
+            # 4. make sure that the return types are the same
+            if (not(issubclass(retType, return_type) and issubclass(retType, return_type))):
+                typeCheckError(f"Not returning the expected return type of the function", f.lineNumber)
+            
+            # 5. return nil as declaration statements have no return type
+            return nil
+        
+        case FunCall(Identifier(lineNumber, _) as f, args): 
+            # Get the function object
+            fn = scopes.getVariable(f.val)
+            
+            # Generate the type of arguments
+            argv = []
             for arg in args:
                 argv.append(typecheck(arg, scopes))
-
-            scopes.beginScope()
             
-            for param, arg in zip(fn.params, argv):
-                scopes.declareVariable(param,arg(None),arg,False)
-
+            # Only typechecking the param type and the argument types
             p_types = fn.params_types
+            for i in range(len(p_types)):
+                if (not(issubclass(p_types[i],(argv[i])))):
+                    raise Exception(f" {i+1}th Argument passed to the function is of invalid type")
 
-            for len_ in range(len(p_types)):
-                if (not(issubclass(p_types[len_],(argv[len_])))):
-                    raise Exception(f" {len_+1}th Argument passed to the function is of invalid type")
-
-            ret_type = fn.return_type 
-            eval_type = typecheck(fn.body,scopes)
-
-            if (not(issubclass(eval_type,ret_type))):
-                raise Exception("Invalid type returned by the function")
+            # Returning the return type of the function
+            return fn.return_type
         
-            scopes.endScope()
-            return ret_type
-
+        case Block(blockStatements):
+            # Return the type of the last statement in the seq in block
+            return typecheck(blockStatements, scopes)
+        
         case _:
             raise Exception("Type checking failed.")

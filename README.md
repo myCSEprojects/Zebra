@@ -283,27 +283,38 @@ The Operator Precedence from lowest to highest.
 |unary|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;~&nbsp;&nbsp;&nbsp;-|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Right
 ## CFG of the parser
 **The Context Free Grammar of our language:**
-$$~program  \rightarrow  (declaration)^*~~ EOF$$
-$$declaration  \rightarrow  vardec  ~~ | ~~ statement$$
-$$statement  \rightarrow  expression ~ Statement ~ | ~ print ~ Statement ~ | ~ if ~ Statement ~ | ~ while ~ Statement ~ | ~ for ~ Statement  | block $$
-$$vardec \rightarrow  "var" ~~ identifier ~~ ( ~ "=" ~ expression) ~ ? ~ ";"$$
-$$while ~ Statement  \rightarrow  "while" ~~ "(" ~~ expression ~~ ")" ~~ "\{" ~~ declaration ~~ "\}" ~~ $$
-$$block ~ \rightarrow "\{" ~~ (declaration)^* ~~ "\}" $$
-$$if ~ Statement  \rightarrow  "if" ~~ "(" ~~ expression ~~ ")" ~~ "\{" ~~ declaration ~~ "\}" ~~ ("else" ~~ "\{" ~~ declaration ~~ "\}")? ~~ $$
-$$print ~ Statement  \rightarrow  "zout" ~ "("~ expression ~ ")" ~ ";"$$
-$$for ~ Statement  \rightarrow  "for" ~ "("( ~ vardec ~ | ~ expression ~ Statement ~ | ~ ";") ~~ expression? ~~ ";" ~ expression? ~ ")" ~statement$$
-$$expression ~ Statement  \rightarrow  expression ~~ ";"$$
-$$expression \rightarrow  assignment$$
-$$assignment  \rightarrow  identifier "="assignment ~~~ | ~~~ logicOr ~~~ $$
-$$logicOr \rightarrow  logicAnd ~~ (~~ "||" ~~ logicAnd ~~ )^* ~~ $$
-$$logicAnd \rightarrow  equality ~~ ( ~~ "\And\And" ~~ equality ~~ )^* ~~ $$
-$$equality  \rightarrow  comparision ~~ ( ~ ( ~ "!=" ~ | ~ "==" ~ ) ~~ comparision)^* ~~ $$
-$$comparision  \rightarrow  add(~ (~ ">"~ |~ ">="~ |~ "<"~ |~ "<="~ )~ add~ )^* ~~ $$
-$$add  \rightarrow mult( ~ ("-" ~ | ~ "+") ~ mult)^* ~~ $$
-$$mult \rightarrow unary( ~ ("/" ~ | ~ "\*") ~ unary)^* ~~ $$
-$$unary  \rightarrow  ("!" ~ | ~ "-") ~ unary ~~ |~~ atom$$
-$$atom  \rightarrow  Identifier ~~ | ~~ Int ~~ | ~~ Bool ~~ | ~~ String ~~ | ~~ Float ~~ | ~~ nil ~~ | ~~ "(" ~ expression ~ ")"$$
 
+$$
+\begin{align}
+~program  &\rightarrow  (declaration)^*~~ EOF \\
+declaration  &\rightarrow  vardec  ~~ | ~~ statement \\
+statement  &\rightarrow  expression ~ Statement ~ | ~ print ~ Statement ~ | ~ if ~ Statement ~ | ~ while ~ Statement ~ \\
+&| ~ for ~ Statement ~ | ~ block ~ | ~ list ~ remove ~ statement ~ | ~ list ~ append~statement ~ | ~ list ~ insert ~ statement \\
+vardec &\rightarrow  ('const')? ~~ ('int'~|~'float'~|~'boolean'~|~'string') ~~ identifier ~~ ( ~ '=' ~ expression)? ~ ';' \\
+&|~~ ('list')* ~~ ('int' ~ | ~ 'float' ~ | ~ 'boolean'~|~'string') ~~ identifier ~~ ( ~ '=' ~ expression) ~ ? ~ ';' \\
+while~Statement  &\rightarrow  'while' ~~ '(' ~~ expression ~~ ')' ~~ ' \\{ ' ~~ declaration ~~ ' \\} ' ~~  \\
+block ~ &\rightarrow '\\{' ~~ (declaration)^* ~~ '\\}'  \\
+if ~ Statement  &\rightarrow  'if' ~~ '(' ~~ expression ~~ ')' ~~ '\\{' ~~ declaration ~~ '\\}' ~~ ('else' ~~ ((if~statement )~|~'\\{' ~~ declaration ~~ '\\}'))? ~~  \\
+print ~ Statement  &\rightarrow  'zout' ~ '('~ expression ~ ')' ~ ';' \\
+for ~ Statement  &\rightarrow  'for' ~~ '(' ~~ ( ~ vardec ~ | ~ expression ~ Statement ~ | ~ ';') ~~ expression? ~~ ';' ~ expression? ~ ')' ~statement \\
+list ~ remove ~ statement & \rightarrow 'remove' ~~ '(' ~~ expression ~~ ',' ~~ Indentifier ~~ ')' ~~ ';' \\
+list ~ append ~ statement & \rightarrow 'append' ~~ '(' ~~ expression ~~ ',' ~~ Indentifier ~~ ')' ~~ ';' \\
+list ~ insert ~ statement & \rightarrow 'insert' ~~ '(' ~~ expression ~~ ',' ~~ expression ~~ ',' ~~ Indentifier ~~ ')' ~~ ';' \\
+expression ~ Statement  &\rightarrow  expression ~~ ';' \\
+expression &\rightarrow  assignment \\
+assignment  &\rightarrow  identifier '='assignment ~~~ | ~~~ logicOr ~~~  \\
+logicOr &\rightarrow  logicAnd ~~ (~~ '||' ~~ logicAnd ~~ )^* ~~  \\
+logicAnd &\rightarrow  equality ~~ ( ~~ '\And\And' ~~ equality ~~ )^* ~~  \\
+equality  &\rightarrow  comparision ~~ ( ~ ( ~ '!=' ~ | ~ '==' ~ ) ~~ comparision)^* ~~  \\
+comparision  &\rightarrow  add( ~ ( ~ '>' ~ | ~ '>=' ~ | ~ '<' ~ | ~ '<=' ~ ) ~ add ~ )^* ~~  \\
+add  &\rightarrow mult ~~ ( ~ ('-' ~ | ~ '+') ~ mult)^* ~~  \\
+mult &\rightarrow unary ~~ ( ~ ('/' ~ | ~ '*' ~ | ~ '\\%' ) ~ unary)^\* \\
+unary  &\rightarrow  ('!' ~ | ~ '-') ~ unary ~~ | ~~ atom ~~ | ~~ list ~ length\\
+list ~ length & \rightarrow 'length' ~~ '(' ~~ Indentifier ~~ ')' \\
+atom  &\rightarrow  Identifier ~~ | Identifier ~~ '(' ~~ (expression) ~~ * ~~ expression ~~ ')' ~~ \\
+&|~~ Int ~~ | ~~ Bool ~~ | ~~ String ~~ | ~~ Float ~~ | ~~ nil ~~ | ~~ '(' ~ expression ~ ')' \\
+\end{align}
+$$
 
 
 ## Scoping

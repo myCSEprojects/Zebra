@@ -214,16 +214,15 @@ class Parser:
             case Operator(lineNumber, '['):
                 self.lexer.advance()
                 lst = zList(None, [])
-                while (True):
+                # Collecting expressions until we hit a ']'
+                while (self.lexer.peek_token().val != ']'):
                     exp = self.parse_expr()
                     lst.elements.append(exp)
                     if (self.lexer.peek_token().val == ','):
                         self.lexer.advance()
-                    elif (self.lexer.peek_token().val == ']'):
-                        self.lexer.advance()
-                        break
-                    else:
-                        ParseError(self, f"Expected a \']\' and \',\'", self.lexer.peek_token().lineNumber)
+                    elif(self.lexer.peek_token().val != ']'):
+                        ParseError(self, f"Expected a \']\' or \',\'", self.lexer.peek_token().lineNumber)
+                self.lexer.advance()
                 return lst
             case other:
                 ParseError(self, "Expected an Expression!", other.lineNumber)
@@ -326,8 +325,6 @@ class Parser:
                 return self.parse_append()
             case Keyword(lineNumber, "remove"):
                 return self.parse_remove()
-            case Keyword(lineNumber, "length"):
-                return self.parse_len()
             case Keyword(lineNumber, "insert"):
                 return self.parse_insert()
             case Keyword(lineNumber,"{") :

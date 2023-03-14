@@ -90,7 +90,7 @@ class list_remove:
 
 @dataclass 
 class list_len:
-    list_name : Identifier
+    list_name : 'AST'
 
 @dataclass 
 class list_insert:
@@ -496,11 +496,17 @@ def evaluate(program: AST, scopes: Scopes = None):
 
         case Slice(value_, first, second):
             elem = evaluate(value_, scopes)
+            if(not(isinstance(elem, zList))):
+        
+                if (first.value>second.value or first.value < 0 or second.value > len(elem.value)):
+                    RuntimeError("Index out of bounds", None, "indexError")
+                
+                return Str(elem.value[first.value:second.value])
+            else:
 
-            if (first>second or first < 0 or second > len(elem.value)):
-                RuntimeError("Index out of bounds", None, "indexError")
-            
-            return Str(elem.value[first:second])
+                if (first.value>second.value or first.value < 0 or second.value > len(elem.elements)):
+                    RuntimeError("Index out of bounds", None, "indexError")
+                return zList(elem.dtype, elem.elements[first.value:second.value])
         
         case PRINT(print_stmt, end):
             ans=None
@@ -557,8 +563,8 @@ def evaluate(program: AST, scopes: Scopes = None):
                 RuntimeError(f"list index out of bounds", None, 'indexError')
             return l.elements.pop(index.value)
         
-        case list_len(list_name):
-            l=scopes.getVariable(list_name.val)
+        case list_len(l):
+            l = evaluate(l, scopes)
             return Int(len(l.elements))
         
         case list_insert(index, element, list_name):

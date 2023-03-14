@@ -266,8 +266,21 @@ $$Variable=Str  \rightarrow  Str$$
    `Int(0)`, `Float(0)`, `empty dictionary`, `empty string`, `nil`, `False`, `empty list`
    
    Every value other than these correspond to `True`.
-   
-   
+
+## Statically typed list
+
+List contains elements of only single specified type.  
+Can handle nested lists.  
+The list operations supported are: `list_append`, `list_remove`, `list_insert`, `Slice`, `list_len`    
+
+language syntax:   
+
+`list_append` : `append(element, list_name);`  
+`list_remove` : `remove(index, list_name);`  
+`list_insert` : `insert(index, element, list_name);`  
+`Slice` : `slice list_name start:end`  
+`list_len` : `length(list_name)`
+
 ## Operator Precedence
 
 The Operator Precedence from lowest to highest.
@@ -312,7 +325,8 @@ mult &\rightarrow unary ~~ ( ~ ('/' ~ | ~ '*' ~ | ~ '\\%' ) ~ unary)^\* \\
 unary  &\rightarrow  ('!' ~ | ~ '-') ~ unary ~~ | ~~ atom ~~ | ~~ list ~ length\\
 list ~ length & \rightarrow 'length' ~~ '(' ~~ Indentifier ~~ ')' \\
 atom  &\rightarrow  Identifier ~~ | Identifier ~~ '(' ~~ (expression) ~~ * ~~ expression ~~ ')' ~~ \\
-&|~~ Int ~~ | ~~ Bool ~~ | ~~ String ~~ | ~~ Float ~~ | ~~ nil ~~ | ~~ '(' ~ expression ~ ')' \\
+&|~~ Int ~~ | ~~ Bool ~~ | ~~ String ~~ | ~~ Float ~~ | ~~ nil ~~ | ~~ '(' ~ expression ~ ')' ~~ | ~~ '['(expression',')(expression)?']' ~~ \\
+&| ~ 'slice' ~~ expression ~~ expression:expression\\
 \end{align}
 $$
 

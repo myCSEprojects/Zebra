@@ -90,7 +90,7 @@ def createDummyObject(type_ : type):
         return type_(None)
     elif type_ == nil:
         return nil()
-    elif type_ == zList:
+    elif issubclass(type_, zList):
         return zList(None, None)
 
 
@@ -112,6 +112,7 @@ def typecheckList(lst: zList, lineNumber: int, scopes:Scopes):
             typeCheckError(f"Cannot initialize a list of type {lst.dtype} with element of type {type(element)}.", lineNumber)
         if isinstance(element_ret, zList):
             typecheckList(element, lineNumber, scopes)
+    return zList
 
 def typecheck(program: AST, scopes = None):
     if (scopes == None):
@@ -231,19 +232,24 @@ def typecheck(program: AST, scopes = None):
 
             # Make sure all the elements of the list are of the type zList.dtype
             if (dtype == zList):
-                typecheckList(value, var.lineNumber, scopes)
-                scopes.declareVariable(var, value, dtype, isConst)
+                tempval=value
+                value = typecheckList(value, var.lineNumber, scopes)
+                scopes.declareVariable(var, tempval, dtype, isConst)
             else:
                 # Evaluating the expression before declaration
                 value = typecheck(value, scopes)
                 # Declaring
-                scopes.declareVariable(var, value(None), dtype, isConst)
+                scopes.declareVariable(var, createDummyObject(value), dtype, isConst)
             return dtype
 
         case Slice(value_, first, second):       #checking value_ is string 
             tc = typecheck(value_, scopes)
+            tf = typecheck(first, scopes)
+            ts = typecheck(second, scopes)
             if (not(issubclass(tc, Str | zList))):
-                typeCheckError("Arguments passed to Slice must be of {Str} | {zList} type", None)
+                typeCheckError("First argument passed to Slice must be of {Str} | {zList} type", None)
+            if not (issubclass(tf, Int) or issubclass(ts, Int)):
+                typeCheckError("Second and third arguments passed to Slice must be of {Int} type", None)
             return tc
 
         case While(condition,block) :            #checking while condition data type
@@ -310,10 +316,10 @@ def typecheck(program: AST, scopes = None):
                 typeCheckError(f"Cannot remove an element from a constant list.", None, "constError")
             return var_type
             
-        case list_len(list_name):
-            varType = scopes.getVariableType(list_name.val)
-            if not(issubclass(varType, zList)):
-                typeCheckError(f"Cannot remove an element from {varType}.", None)
+        case list_len(l):
+            l = typecheck(l, scopes)
+            if not(issubclass(l, zList)):
+                typeCheckError(f"Cannot remove an element from {l}.", None)
             return Int
         
         case list_insert(index, element, list_name):
@@ -321,7 +327,7 @@ def typecheck(program: AST, scopes = None):
             lIsConst = scopes.getVariableIsConst(list_name.val)
             lType = scopes.getVariable(list_name.val).dtype
             element=typecheck(element, scopes)
-            index=typecheck(index)
+            index=typecheck(index, scopes)
             if not(issubclass(var_type, zList)):
                 typeCheckError(f"Cannot append an element of type {element} to a {var_type}.", None)
             elif lIsConst:

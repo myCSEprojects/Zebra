@@ -1,11 +1,19 @@
+zout("testcase 1 for lists");
+
 list int a = [1,2,3];
 zout(length(a));
-
 append(2, a);
 zout(length(a));
-
 remove(1, a);
 zout(length(a));
+zout(length(slice a 1:3));
 
-insert(1, 1, a);
-zout(length(a));
+zout("testcase 2 for nested lists");
+
+list list int b = [[100],[200],[300]];
+zout(length(b));
+append([2], b);
+zout(length(b));
+remove(2, b);
+zout(length(b));
+zout(length(slice b 1:3));

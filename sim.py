@@ -535,9 +535,14 @@ def evaluate(program: AST, scopes: Scopes = None):
         
         case For(initial,condition,block) :
             # evaluating the initialization and declaration condition
+            scopes.beginScope()
+            # run the initial statement(should not effect outrer scope)
+            evaluate(initial,scopes)
             if (initial != nil()) :
                 evaluate(initial,scopes)
-            return evaluate(While(condition,block),scopes)
+            retVal = evaluate(While(condition,block),scopes)
+            scopes.endScope()
+            return retVal
         
         case list_append(element, list_name):
             l = scopes.getVariable(list_name.val)

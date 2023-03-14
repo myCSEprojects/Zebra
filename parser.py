@@ -325,8 +325,6 @@ class Parser:
                 return self.parse_append()
             case Keyword(lineNumber, "remove"):
                 return self.parse_remove()
-            case Keyword(lineNumber, "length"):
-                return self.parse_len()
             case Keyword(lineNumber, "insert"):
                 return self.parse_insert()
             case Keyword(lineNumber,"{") :

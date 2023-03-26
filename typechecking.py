@@ -3,82 +3,30 @@ from error import typeCheckError, TypeCheckException
 from dataclasses import dataclass
 from typing import List, Dict, Union
 
-isTypeCheckError = False
-
 """
 NOTE: In some places we used python exception to raise errors that are not caught at any level.
 This is because the error occured due to the bad functioning of the parser(and we want to correct them).
 Some errors are to be shifted to the resolver pass and are also not caught at any level.(in Type check scopes)
 """
 
-@dataclass
-class TypecheckerScopes:
+# Some Utility functions
+def checkTypeTwo(firstOperandType: AST, secondOperandType: AST, firstType: type, secondType: type):
     '''
-    Scopes storing the stack of environments
+    Utility to check the type of the operands
     '''
-    def __init__(self, stack: List[Dict[str, 'AST']] = None):
-        if (stack == None):
-            self.stack = [dict()]
-        else:
-            self.stack = stack
-    
-    def beginScope(self): 
-        self.stack.append({})
-    
-    def endScope(self):
-        assert(len(self.stack) != 0)
-        self.stack.pop()
-    
-    def declareVariable(self, var: Identifier, rtype: 'AST', ltype:'AST', isConst: bool, list_dtype: None):
-        '''
-        Only declares a variable in the current scope
-        '''
-        assert(len(self.stack) != 0)
+    if not issubclass(firstOperandType, firstType):
+        return False
+    if not issubclass(secondOperandType, secondType):
+        return False
+    return True
 
-        # Avoiding redeclaration in the same scope
-        if var.val in self.stack[-1]:
-            typeCheckError(f"Redeclaring already declared variable {var.val}", var.lineNumber, 'declareError')
-        if (rtype != ltype):
-            typeCheckError(f"Cannot initialize {ltype} with Literal of dtype {rtype}.", var.lineNumber)
-
-        self.stack[-1][var.val] = [ltype, isConst]
-
-        # Adding another list_dtype field to the scopes
-        if (issubclass(ltype, zList)):
-            self.stack[-1][var.val].append(list_dtype)
-    
-    def declareFun(self, f, fn_object):
-        #declares the function in the current scope with the give name v
-        assert(len(self.stack) != 0)
-
-        if f.val in self.stack[-1]:
-            raise Exception(f"Redeclaring already declared function {f.val}")
-        
-        self.stack[-1][f.val] = [fn_object, FnObject, False]
-    
-    def updateVariable(self, name: str, rtype: 'AST'):
-        '''
-        Utility to update the variable with the given name
-        '''
-        for i in range(len(self.stack)-1, -1, -1):
-            if name in self.stack[i]:
-                if (self.stack[i][name][1] == True):
-                    raise Exception(f"Cannot Update const Variable {name}")
-                if (rtype != self.stack[i][name][0]):
-                    raise Exception(f"Cannot assign {rtype} to {self.stack[i][name][0]}")
-                return
-        
-        raise Exception(f"Could not find the variable {name}.")
-
-    def getVariable(self, name: str):
-        '''
-        Utility to get the value of the variable with the given name
-        '''
-        for i in range(len(self.stack)-1, -1, -1):
-            if name in self.stack[i]:
-                return self.stack[i][name]
-        
-        raise Exception(f"Could not resolve the variable {name}.")
+def checkSameType(firstOperandType: AST, secondOperandType: AST):
+    '''
+    Utility to check the if both operands are of the same type
+    '''
+    if not (issubclass(firstOperandType, secondOperandType) and issubclass(firstOperandType, secondOperandType)):
+        return False
+    return True
 
 Number = Int | Float
 
@@ -94,16 +42,14 @@ def createDummyObject(type_ : type):
         return zList(None, None)
 
 
-def typecheckAST(program: AST, scopes: TypecheckerScopes):
+def typecheckAST(program: AST, scopes: Scopes):
     '''
     Typechecks the given AST
     '''
-    global isTypeCheckError
     try:
         typecheck(program, scopes)
     except TypeCheckException as e:
-        isTypeCheckError = True
-    return isTypeCheckError
+        raise e
 
 def typecheckList(lst: zList, lineNumber: int, scopes:Scopes):
     for element in lst.elements:
@@ -132,98 +78,103 @@ def typecheck(program: AST, scopes = None):
             return nil
         case zList(dtype, lst):
             return zList
-        case BinOp(operator, left, right):
-            firstOperand = typecheck(left, scopes)
-            secondOperand = typecheck(right, scopes)
+        case BinOp(operator, firstOperand, secondOperand):
+            # Getting the operand types
+            firstOperandType = typecheck(firstOperand, scopes)
+            secondOperandType = typecheck(secondOperand, scopes)
             
+            # Checking if the operator is defined
             if (operator.val not in BINARY_OPERATORS):
                 typeCheckError(f"Binary Operator {operator} not reconized", operator.lineNumber)
             
+            # General BinOp type error string
+            errorString = f"Operator {operator} not defined between data types {firstOperandType.__name__} and {secondOperandType.__name__}"
+
             match operator.val:
                 case  "+":
-                    if (issubclass(firstOperand, Str)):
-                        BinOp.checkType(operator, firstOperand, secondOperand, Str, Str)
-                    else:
-                        BinOp.checkType(operator, firstOperand, secondOperand, Number, Number)
-                    
-                    if (isinstance(firstOperand, Float) or isinstance(secondOperand, Float)):
+                    if (issubclass(firstOperandType, Str) and not checkTypeTwo(firstOperandType, secondOperandType, Str, Str)):
+                        typeCheckError(errorString, operator.lineNumber)
+                    elif (issubclass(firstOperandType, Number) and not checkTypeTwo(firstOperandType, secondOperandType, Number, Number)):
+                        typeCheckError(errorString, operator.lineNumber)
+                    if (issubclass(firstOperandType, Float) or issubclass(secondOperandType, Float)):
                         return Float
                     else:
                         return Int
-                case  "-":
-                    BinOp.checkType(operator, firstOperand, secondOperand, Number, Number)
                     
-                    if (isinstance(firstOperand, Float) or isinstance(secondOperand, Float)):
+                case  "-":
+                    if not checkTypeTwo(firstOperandType, secondOperandType, Number, Number):
+                        typeCheckError(errorString, operator.lineNumber)
+                    
+                    if (issubclass(firstOperandType, Float) or issubclass(secondOperandType, Float)):
                         return Float
                     else:
                         return Int
 
                 case "/":
-                    BinOp.checkType(operator, firstOperand, secondOperand, Number, Number)
+                    if not checkTypeTwo(firstOperandType, secondOperandType, Number, Number):
+                        typeCheckError(errorString, operator.lineNumber)
                     return Float
                 
                 case "*":
-                    # for strings starts
-                    second_type = isinstance(secondOperand,int) or isinstance(secondOperand,Int)
-                    first_type = isinstance(firstOperand,int) or isinstance(firstOperand,Int)
-                    
-                    if (isinstance(firstOperand,Str) and second_type):
+                    if (issubclass(firstOperandType,Str) and issubclass(secondOperandType, Int)):
                         return Str
 
-                    if (first_type and isinstance(secondOperand,Str)):
+                    elif (issubclass(firstOperandType,Int) and issubclass(secondOperandType,Str)):
                         return Str
-                    #for string ends
-
-                    BinOp.checkType(operator, firstOperand, secondOperand, Number, Number)
-                    
-                    if (isinstance(firstOperand, Float)):
-                        return Float
+                    elif not checkTypeTwo(firstOperandType, secondOperandType, Number, Number):
+                        typeCheckError(errorString, operator.lineNumber)
                     else:
-                        return Int
+                        if (issubclass(firstOperandType, Float) | issubclass(secondOperandType, Float)):
+                            return Float
+                        else:
+                            return Int
                 
                 case "//" :
-                    BinOp.checkType(operator, firstOperand, secondOperand, Number, Number)
+                    if not checkTypeTwo(firstOperandType, secondOperandType, Number, Number):
+                        typeCheckError(errorString, operator.lineNumber)
                     return Int
                 
                 case "%" | "<<" | ">>" | "&" | "|":
-                    BinOp.checkType(operator, firstOperand, secondOperand, Int, Int)
+                    if not checkTypeTwo(firstOperandType, secondOperandType, Int, Int):
+                        typeCheckError(errorString, operator.lineNumber)
                     return Int
                 
                 
                 case "<=" | "<" | "==" | ">" | ">=" | "!=":
-                    BinOp.checkSameType(operator, firstOperand, secondOperand)
+                    if not checkSameType(firstOperandType, secondOperandType):
+                        typeCheckError(errorString, operator.lineNumber)
                     return Bool
                 
                 case "&&" | "||": 
-                    BinOp.checkType(operator, firstOperand, secondOperand, AST, AST)
+                    if not checkTypeTwo(firstOperandType, secondOperandType, AST, AST):
+                        typeCheckError(errorString, operator.lineNumber)
                     return Bool
                 
-                case "=":
-                    BinOp.checkType(operator, type(left), secondOperand, Variable, AST)
-                    
-                    BinOp.checkSameType(operator, firstOperand, secondOperand|nil)
-                    
+                case "=":                    
                     # Prevent assignment for lists (for now)
-                    if (issubclass(secondOperand, zList)):
+                    if (issubclass(secondOperandType, zList)):
                         typeCheckError(f"Cannot assign a list to a variable.", operator.lineNumber)
 
-                    scopes.updateVariable(left.name, secondOperand(None))
-                    return secondOperand
+                    scopes.updateVariable(firstOperand.name, createDummyObject(secondOperandType))
+                    return secondOperandType
 
         case UnOp(operator, operand):   
-            ot = typecheck(operand, scopes)
+            opearandType = typecheck(operand, scopes)
+            
             if (operator.val not in UNARY_OPERATORS):
                 typeCheckError(f"Unary Operator {operator} not reconized", operator.lineNumber)
+            
             match operator.val:
                 case "-":
-                    UnOp.checkType(operator, ot, Number)
-
-                    if (isinstance(ot, Float)):
+                    if not issubclass(opearandType, Number):
+                        typeCheckError(f"Operator {operator} is not defined for data type {opearandType.__name__}", operator.lineNumber)
+                    elif (isinstance(opearandType, Float)):
                         return Float
                     else:
                         return Int
                 case "~":
-                    UnOp.checkType(operator, ot, Bool)
+                    if not issubclass(opearandType, Bool):
+                        typeCheckError(f"Operator {operator} is not defined for data type {opearandType.__name__}", operator.lineNumber)
                     return Bool
 
         case Declare(var, value, dtype, isConst):
@@ -267,7 +218,7 @@ def typecheck(program: AST, scopes = None):
         case For(initial,condition,block):
             scopes.beginScope()
             
-            tc1 =typecheck(initial, scopes)
+            tc1 = typecheck(initial, scopes)
             if(not(issubclass(tc1,AST))):
                 raise Exception("Arguments passes to For initial must be of 'AST' type")
             tc = typecheck(condition, scopes)

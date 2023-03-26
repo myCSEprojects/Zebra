@@ -81,7 +81,7 @@ def word_to_token(lineNumber, word):
     if word == "true":
         return Boolean(lineNumber, True)
     if word == "false":
-        return Boolean(False)
+        return Boolean(lineNumber, False)
     return Identifier(lineNumber,word)
 
 @dataclass

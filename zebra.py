@@ -2,7 +2,7 @@ import sys
 from parser import *
 from typechecking import *
 from sim import *
-from error import RuntimeException
+from error import *
 try:
     import readline
 except:
@@ -29,29 +29,28 @@ def executeFile(path: str):
     
     execute(stream, Scopes(), Scopes())
 
-def execute(stream:str, typecheckerScopes: TypecheckerScopes, scopes: Scopes):
+def execute(stream:str, typecheckerScopes: Scopes, scopes: Scopes):
     global isError
     try: 
-        programAST, isError = parse(stream) # any ParseError in the stream would be caught in the parse function and the error flag would be set
+        programAST = parse(stream) # any ParseError in the stream would be caught in the parse function and the error flag would be set
         # Exiting if there were any errors during parsing
-        if (isError):
-            return nil()
+        
         # Performing typechecking
-        isError = typecheckAST(programAST, typecheckerScopes) # any TypecheckError in the stream would be caught in the typecheckAST function and the error flag would be set
+        typecheckAST(programAST, typecheckerScopes) # any TypecheckError in the stream would be caught in the typecheckAST function and the error flag would be set
         # Exiting if there were any errors during typechecking
         if (isError):
             return nil()
-        # Catching any runtime errors
-        output = nil()
-        try:
-            output = evaluate(programAST, scopes)
-        except RuntimeException as e:
-            isError = True
+        
+        output = evaluate(programAST, scopes)
         return output
+    
+    except (RuntimeException, TypeCheckException, ParseException, ResolveException) as e:
+        isError = True
+        return nil()
+    
     except Exception as e:
         # An uncaught expression for development purpose (Due to unhandled cases in the parser)
         raise e
-    return nil()
 
 def interactiveShell():
     '''

@@ -1,0 +1,18 @@
+int n = 3;
+int sumofn = 0;
+
+for(int i = 1; i <= n; i=i+1) {
+    sumofn = sumofn + i;
+}
+
+int sos = 0;
+for(int i = 1; i <= n; i=i+1) {
+    sos = sos + i*i;
+}
+
+int sqos = sumofn * sumofn;
+
+int difference = sqos - sos;
+
+
+zout(difference);

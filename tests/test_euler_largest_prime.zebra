@@ -1,4 +1,4 @@
-int in = 13195;
+int in = 13;
 
 func int largestPrimeFactor(int n){
     int factor = 2;

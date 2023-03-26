@@ -247,7 +247,7 @@ class Parser:
         left = self.parse_unary()
         while True:
             match self.lexer.peek_token():
-                case Operator(lineNumber, op) if op in "*/%":
+                case Operator(lineNumber, op) if op in "*/%" or op == "//":
                     self.lexer.advance()
                     m = self.parse_unary()
                     left = BinOp(Operator(lineNumber, op), left, m)

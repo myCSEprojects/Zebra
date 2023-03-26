@@ -444,10 +444,10 @@ def evaluate(program: AST, scopes: Scopes = None):
                     return Bool(firstOperand.value != secondOperand.value)
                 
                 case "&&":
-                    return Bool(Bool.truthy(firstOperand.value) and Bool.truthy(secondOperand.value))
+                    return Bool(Bool.truthy(firstOperand).value and Bool.truthy(secondOperand).value)
                 
                 case "||":
-                    return Bool(Bool.truthy(firstOperand.value) or Bool.truthy(secondOperand.value))
+                    return Bool(Bool.truthy(firstOperand).value or Bool.truthy(secondOperand).value)
                 case "=":
                     return scopes.updateVariable(firstOperand.name, secondOperand)
 
@@ -483,7 +483,6 @@ def evaluate(program: AST, scopes: Scopes = None):
 
         case If (condition, ifBlock, elseBlock):
             evaluated_condition = Bool.truthy(evaluate(condition, scopes))
-            
             if (evaluated_condition.value):
                 return evaluate(ifBlock, scopes)
             else:
@@ -542,8 +541,6 @@ def evaluate(program: AST, scopes: Scopes = None):
             scopes.beginScope()
             # run the initial statement(should not effect outrer scope)
             evaluate(initial,scopes)
-            if (initial != nil()) :
-                evaluate(initial,scopes)
             retVal = evaluate(While(condition,block),scopes)
             scopes.endScope()
             return retVal
@@ -584,8 +581,8 @@ def evaluate(program: AST, scopes: Scopes = None):
 
             scopes.beginScope()
 
-            for param, arg in zip(fn.params, argv):
-                scopes.declareVariable(param,arg,'AST',False)
+            for i in range(len(fn.params)):
+                scopes.declareVariable(fn.params[i],argv[i],fn.params_types[i],False)
         
             returnVal = evaluate(fn.body, scopes)
 

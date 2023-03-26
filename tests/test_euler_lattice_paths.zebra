@@ -13,5 +13,4 @@ func int fact(int x){
 int n = fact(w + h);
 
 int d = fact(w) * fact(h);
-
 zout(n/d);

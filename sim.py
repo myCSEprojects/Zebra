@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from fractions import Fraction
 from typing import Union, Optional, List, Dict
 from lexer import Keyword, Operator, Identifier
-from error import RuntimeError, typeCheckError
+from error import RuntimeError, typeCheckError, resolveError
 
 @dataclass
 class Variable:
@@ -164,6 +164,10 @@ class Scopes:
     def declareFun(self, f, fn_object):
         #declares the function in the current scope with the give name v
         assert(len(self.stack) != 0)
+
+        if f.val in self.stack[-1]:
+            resolveError(f"Function {f.val} already declared in the current scope.", lineNumber=f.lineNumber)
+
         self.stack[-1][f.val] = [fn_object, FnObject, False]
     
     def declareVariable(self, var: Identifier, value: 'AST', dtype:type, isConst: bool):
@@ -171,6 +175,14 @@ class Scopes:
         Only declares a variable in the current scope
         '''
         assert(len(self.stack) != 0)
+
+        # Avoiding redeclaration in the same scope
+        if var.val in self.stack[-1]:
+            resolveError(f"Redeclaring already declared variable {var.val}", var.lineNumber)
+        elif (dtype != Bool and value != nil() and not isinstance(value, dtype)):
+            typeCheckError(f"Cannot initialize a {dtype.__name__} with Literal of type {type(value).__name__}.", var.lineNumber)
+        elif (dtype == Bool):
+            value = Bool.truthy(value)
         self.stack[-1][var.val] = [value, dtype, isConst]
     
     def updateVariable(self, name: str, value: 'AST'):
@@ -183,9 +195,17 @@ class Scopes:
                 # Truthify if lvalue is of type Bool
                 if (issubclass(self.stack[i][name][1], Bool)):
                     value = Bool.truthy(value)
+
+                if (self.getVariableIsConst(name) == True):
+                    resolveError(f"Cannot Update const Variable {name}", None)
+                dtype = self.getVariableType(name)
+                if (value != nil() and not isinstance(value, dtype)):
+                    typeCheckError(f"Cannot assign {type(value).__name__} to a variable of type {dtype.__name__}", None)
                 
                 self.stack[i][name][0] = value
                 return value
+        resolveError(f"Could not resolve the variable {name}", None)
+
 
     def getVariable(self, name: str):
         '''
@@ -238,20 +258,6 @@ class BinOp:
                 secondOperand = Float(secondOperand.value)
         return firstOperand, secondOperand
 
-    @staticmethod
-    def raiseTypeError(operator, firstOperand, secondOperand):
-        typeCheckError(f"Operator {operator.val} not defined for operands of type {(firstOperand)} and {(secondOperand)}.", operator.lineNumber)
-
-    @staticmethod
-    def checkSameType(operator, firstOperand, secondOperand):
-        if (not issubclass((firstOperand),(secondOperand))):
-            BinOp.raiseTypeError(operator, firstOperand, secondOperand)
-
-    @staticmethod
-    def checkType(operator, firstOperand, secondOperand, firstOperandType, secondOperandType):
-        if (not(issubclass(firstOperand, firstOperandType)) or not(issubclass(secondOperand, secondOperandType))):
-            BinOp.raiseTypeError(operator, firstOperand, secondOperand)
-
 
 @dataclass
 class UnOp:
@@ -261,14 +267,6 @@ class UnOp:
     operand: 'AST'
     operator: Operator
 
-    @staticmethod
-    def raiseTypeError(operator, operand):
-        typeCheckError(f"Operator {operator.val} not defined for the operand of type {(operand)}.", operator.lineNumber)
-
-    @staticmethod
-    def checkType(operator, operand, operandType):
-        if (not issubclass(operand,operandType)):
-            UnOp.raiseTypeError(operator, operand)
 @dataclass
 class PRINT:
     print_stmt: List['AST']
@@ -446,10 +444,10 @@ def evaluate(program: AST, scopes: Scopes = None):
                     return Bool(firstOperand.value != secondOperand.value)
                 
                 case "&&":
-                    return Bool(firstOperand.value and secondOperand.value)
+                    return Bool(Bool.truthy(firstOperand).value and Bool.truthy(secondOperand).value)
                 
                 case "||":
-                    return Bool(firstOperand.value or secondOperand.value)
+                    return Bool(Bool.truthy(firstOperand).value or Bool.truthy(secondOperand).value)
                 case "=":
                     return scopes.updateVariable(firstOperand.name, secondOperand)
 
@@ -485,7 +483,6 @@ def evaluate(program: AST, scopes: Scopes = None):
 
         case If (condition, ifBlock, elseBlock):
             evaluated_condition = Bool.truthy(evaluate(condition, scopes))
-            
             if (evaluated_condition.value):
                 return evaluate(ifBlock, scopes)
             else:
@@ -544,8 +541,6 @@ def evaluate(program: AST, scopes: Scopes = None):
             scopes.beginScope()
             # run the initial statement(should not effect outrer scope)
             evaluate(initial,scopes)
-            if (initial != nil()) :
-                evaluate(initial,scopes)
             retVal = evaluate(While(condition,block),scopes)
             scopes.endScope()
             return retVal
@@ -586,8 +581,8 @@ def evaluate(program: AST, scopes: Scopes = None):
 
             scopes.beginScope()
 
-            for param, arg in zip(fn.params, argv):
-                scopes.declareVariable(param,arg,'AST',False)
+            for i in range(len(fn.params)):
+                scopes.declareVariable(fn.params[i],argv[i],fn.params_types[i],False)
         
             returnVal = evaluate(fn.body, scopes)
 

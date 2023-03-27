@@ -247,7 +247,7 @@ class Parser:
         left = self.parse_unary()
         while True:
             match self.lexer.peek_token():
-                case Operator(lineNumber, op) if op in "*/%":
+                case Operator(lineNumber, op) if op in "*/%" or op == "//":
                     self.lexer.advance()
                     m = self.parse_unary()
                     left = BinOp(Operator(lineNumber, op), left, m)
@@ -518,9 +518,15 @@ def parse(string):
     isParseError = False
 
     # Returning the obtained AST as well as the flag isParseError
-    return Parser.parse_program (
+    programAST = Parser.parse_program (
         Parser.from_lexer(Lexer.from_stream(Stream.from_string(string)))
-    ), isParseError
+    )
+
+    # Reraising the ParseException if isParseError is True
+    if isParseError:
+        raise ParseException
+    
+    return programAST
 
 def test_parse():
     print(parse("list int a = [1,2,3]; append(2,a); remove(2,a); insert(0,100,a); a[0:2];")) 

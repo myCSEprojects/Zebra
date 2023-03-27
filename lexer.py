@@ -81,7 +81,7 @@ def word_to_token(lineNumber, word):
     if word == "true":
         return Boolean(lineNumber, True)
     if word == "false":
-        return Boolean(False)
+        return Boolean(lineNumber, False)
     return Identifier(lineNumber,word)
 
 @dataclass
@@ -114,7 +114,7 @@ class Lexer:
                         while True:
                             try:
                                 c = self.stream.next_char()
-                                if ((s=="!" or s=="<" or s==">") and c == "=") or (c==s and (s==">" or s=="<" or s=="=" or s=="&" or s=="|")):
+                                if ((s=="!" or s=="<" or s==">") and c == "=") or (c==s and (s==">" or s=="<" or s=="=" or s=="&" or s=="|" or s == "/")):
                                     s = s + str(c) 
                                     return(Operator(self.lineNumber,s))
                                 else:

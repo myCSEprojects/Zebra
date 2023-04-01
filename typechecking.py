@@ -248,7 +248,9 @@ def typecheck(program: AST, scopes = None):
                 ret = typecheck(line, scopes)
             return ret
         
-        case PRINT(lineNumber, exps):
+        case PRINT(lineNumber, exps, sep,end):
+            sep = typecheck(sep, scopes)
+            end = typecheck(end, scopes)
             for exp in exps:
                 exp = typecheck(exp, scopes)
                 # Make sure that the user does not ask for printing a list
@@ -256,6 +258,10 @@ def typecheck(program: AST, scopes = None):
                     typeCheckError(f"Cannot print a list.", lineNumber, "notPrintable")
                 if (not issubclass(exp, AST)):
                     raise Exception(f"Invalid expression {exp} in PRINT")
+                if (not issubclass(sep, Str)):
+                    typeCheckError(f"Invalid separator {sep} in PRINT at {lineNumber}")
+                if (not issubclass(end, Str)):
+                    typeCheckError(f"Invalid end {end} in PRINT at {lineNumber}")
             return nil
         
         case list_append(lineNumber, element, list_name):

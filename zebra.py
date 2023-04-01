@@ -2,6 +2,7 @@ import sys
 from parser import *
 from typechecking import *
 from sim import *
+import pprint
 from error import *
 from resolver import *
 try:
@@ -37,8 +38,9 @@ def execute(stream:str, resolverScopes: ResolverScopes, typecheckerScopes: Scope
         
         # print(programAST)
         # Resolving the AST
+        pp = pprint.PrettyPrinter(indent=4)
         resolvedProgram = resolve(programAST, resolverScopes)
-        # print(resolvedProgram)
+        # pp.pprint(resolvedProgram)
         # Performing typechecking
         typecheckAST(resolvedProgram, typecheckerScopes) # any TypecheckError in the stream would be caught in the typecheckAST function and the error flag would be set
 

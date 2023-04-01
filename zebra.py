@@ -3,6 +3,7 @@ from parser import *
 from typechecking import *
 from sim import *
 from error import *
+from resolver import *
 try:
     import readline
 except:
@@ -27,21 +28,21 @@ def executeFile(path: str):
         print(f"Specified file at {path} does not exist!")
         exit(-1)
     
-    execute(stream, Scopes(), Scopes())
+    execute(stream, ResolverScopes(), Scopes(), Scopes())
 
-def execute(stream:str, typecheckerScopes: Scopes, scopes: Scopes):
+def execute(stream:str, resolverScopes: ResolverScopes, typecheckerScopes: Scopes, scopes: Scopes):
     global isError
     try: 
-        programAST = parse(stream) # any ParseError in the stream would be caught in the parse function and the error flag would be set
-        # Exiting if there were any errors during parsing
+        programAST = parse(stream) 
         
+        # print(programAST)
+        # Resolving the AST
+        resolvedProgram = resolve(programAST, resolverScopes)
+        # print(resolvedProgram)
         # Performing typechecking
-        typecheckAST(programAST, typecheckerScopes) # any TypecheckError in the stream would be caught in the typecheckAST function and the error flag would be set
-        # Exiting if there were any errors during typechecking
-        if (isError):
-            return nil()
-        
-        output = evaluate(programAST, scopes)
+        typecheckAST(resolvedProgram, typecheckerScopes) # any TypecheckError in the stream would be caught in the typecheckAST function and the error flag would be set
+
+        output = evaluate(resolvedProgram, scopes)
         return output
     
     except (RuntimeException, TypeCheckException, ParseException, ResolveException) as e:
@@ -64,6 +65,9 @@ def interactiveShell():
 
     # Creating scopes for typechecking
     typecheckerScopes = Scopes()
+
+    # Creating scopes for resolving
+    resolverScopes = ResolverScopes()
 
     try:
         while True:
@@ -88,7 +92,7 @@ def interactiveShell():
                 break
             
             # Executing the lines
-            output = execute(lines, typecheckerScopes, scopes)
+            output = execute(lines, resolverScopes, typecheckerScopes, scopes)
             
             # Printing new line after each line
             print()

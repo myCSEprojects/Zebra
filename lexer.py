@@ -88,7 +88,7 @@ def word_to_token(lineNumber, word):
 class Lexer:
     stream: Stream
     save: Token = None
-    lineNumber = 0
+    lineNumber = 1      # Line number of the token
     
     def synchronize(self):
         '''

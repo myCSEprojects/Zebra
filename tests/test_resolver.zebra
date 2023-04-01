@@ -1,0 +1,10 @@
+int a = 1;
+
+func int fib(int n){
+    n + a;
+}
+
+{
+    int a = 2;
+    zout(fib(2));
+}

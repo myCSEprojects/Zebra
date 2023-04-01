@@ -8,6 +8,13 @@ from error import ParseError, ParseException, TokenException
 # Global value denoting if the Parse Error occured
 isParseError = False
 
+id: Int = 0        # Global ID useful for the resolver pass
+
+def generate_id():
+    global id
+    id += 1
+    return id
+
 # Data Types dictionary
 dtypes_dict = {
     "int" : Int, 
@@ -53,6 +60,7 @@ class Parser:
     
 
     def parse_if(self):
+        lineNumber = self.lexer.peek_token().lineNumber
         self.lexer.match(Keyword(0,"if"))
         self.lexer.match(Operator(0,"("))
         c = self.parse_expr()
@@ -66,9 +74,10 @@ class Parser:
         else :
             else_block = self.parse_block()
         
-        return If(c,if_block, else_block)
+        return If(lineNumber, c,if_block, else_block)
 
     def parse_for(self):
+        lineNumber = self.lexer.peek_token().lineNumber
         self.lexer.match(Keyword(0, "for"))
         self.lexer.match(Operator(0, "("))
         bf = self.lexer.peek_token()
@@ -93,18 +102,20 @@ class Parser:
         for_block = self.parse_block()
         if (order != nil()):
             for_block.blockStatements.lines.append(order)
-        return For(initial,condition,for_block)
+        return For(lineNumber, initial, condition, for_block)
         
     
     def parse_while(self):
+        lineNumber = self.lexer.peek_token().lineNumber
         self.lexer.match(Keyword(0, "while"))
         self.lexer.match(Operator(0, "("))
         c = self.parse_expr()
         self.lexer.match(Operator(0, ")"))
         w_block = self.parse_block()
-        return While(c, w_block)
+        return While(lineNumber, c, w_block)
     
     def parse_print(self):
+        lineNumber = self.lexer.peek_token().lineNumber
         self.lexer.match(Keyword(0, "zout"))
         self.lexer.match(Operator(0, "("))
         pseq=[]
@@ -115,9 +126,10 @@ class Parser:
             pseq.append(t)
         self.lexer.match(Operator(0, ")"))
         self.lexer.match(Operator(0, ";"))
-        return PRINT(pseq)
+        return PRINT(lineNumber, pseq)
 
     def parse_append(self):
+        lineNumber = self.lexer.peek_token().lineNumber
         self.lexer.match(Keyword(0, "append"))
         self.lexer.match(Operator(0,"("))
         ele=self.parse_expr()
@@ -126,11 +138,13 @@ class Parser:
         if not isinstance(l, Identifier):
             ParseError(self, f"Expected an identifier", l.lineNumber)
         self.lexer.advance()
+        var = Variable(l.lineNumber, l.val, generate_id())
         self.lexer.match(Operator(0,")"))
         self.lexer.match(Operator(0,";"))
-        return list_append(ele, l)
+        return list_append(lineNumber, ele, var)
     
     def parse_remove(self):
+        lineNumber = self.lexer.peek_token().lineNumber
         self.lexer.match(Keyword(0, "remove"))
         self.lexer.match(Operator(0, "("))
         index=self.parse_expr()
@@ -139,18 +153,21 @@ class Parser:
         if not isinstance(l, Identifier):
             ParseError(self, f"Expected an identifier", l.lineNumber)
         self.lexer.advance()
+        var = Variable(l.lineNumber, l.val, generate_id())
         self.lexer.match(Operator(0,")"))
         self.lexer.match(Operator(0,";"))
-        return list_remove(index, l)
+        return list_remove(lineNumber, index, var)
     
     def parse_len(self):
+        lineNumber = self.lexer.peek_token().lineNumber
         self.lexer.match(Keyword(0, "length"))
         self.lexer.match(Operator(0, "("))
         l = self.parse_expr()
         self.lexer.match(Operator(0,")"))
-        return list_len(l)
+        return list_len(lineNumber, l)
     
     def parse_insert(self):
+        lineNumber = self.lexer.peek_token().lineNumber
         self.lexer.match(Keyword(0, "insert"))
         self.lexer.match(Operator(0, "("))
         index=self.parse_expr()
@@ -161,9 +178,10 @@ class Parser:
         if not isinstance(l, Identifier):
             ParseError(self, f"Expected an identifier", l.lineNumber)
         self.lexer.advance()
+        var = Variable(l.lineNumber, l.val, generate_id())
         self.lexer.match(Operator(0,")"))
         self.lexer.match(Operator(0,";"))
-        return list_insert(index, ele, l)
+        return list_insert(lineNumber, index, ele, var)
     
     def parse_expr_stmt(self):
         t = self.parse_expr()
@@ -186,10 +204,10 @@ class Parser:
                             self.lexer.advance()
 
                     self.lexer.match(Operator(0,")"))
-                            
-                    return FunCall(i, params)
+                    func = Variable(i.lineNumber, i.val, generate_id())
+                    return FunCall(lineNumber, func, params)
                 else:
-                    return Variable(name)
+                    return Variable(lineNumber, name, generate_id())
                 
             case Keyword(lineNumber, "slice"):
                 self.lexer.advance()
@@ -197,7 +215,7 @@ class Parser:
                 start = self.parse_expr()
                 self.lexer.match(Operator(0,":"))
                 end = self.parse_expr()
-                return Slice(val, start, end)
+                return Slice(lineNumber, val, start, end)
                 
                 
             case Integer(lineNumber, value):
@@ -238,7 +256,7 @@ class Parser:
         if(op.val in ["~","-"]) :
             self.lexer.advance()
             right = self.parse_unary()
-            return UnOp(right,op)
+            return UnOp(right,op.val)
         elif (op.val == "length"):
             return self.parse_len()
         return self.parse_atom()
@@ -250,7 +268,7 @@ class Parser:
                 case Operator(lineNumber, op) if op in "*/%" or op == "//":
                     self.lexer.advance()
                     m = self.parse_unary()
-                    left = BinOp(Operator(lineNumber, op), left, m)
+                    left = BinOp(lineNumber, op, left, m)
                 case _:
                     break
         return left
@@ -262,7 +280,7 @@ class Parser:
                 case Operator(lineNumber, op) if op in ["+","-"]:
                     self.lexer.advance()
                     m = self.parse_mult()
-                    left = BinOp(Operator(lineNumber, op), left, m)
+                    left = BinOp(lineNumber, op, left, m)
                 case _:
                     break
         return left
@@ -273,7 +291,7 @@ class Parser:
             op = self.lexer.peek_token()
             self.lexer.advance()
             right = self.parse_add()
-            left =  BinOp(op, left, right)
+            left =  BinOp(op.lineNumber, op.val, left, right)
         return left
     
     def parse_equality(self):
@@ -282,7 +300,7 @@ class Parser:
             t = self.lexer.peek_token()
             self.lexer.advance()
             right = self.parse_comparision()
-            left = BinOp(t,left,right)
+            left = BinOp(t.lineNumber, t.val,left,right)
         return left
     
     def parse_logic_and(self) :
@@ -291,7 +309,7 @@ class Parser:
             op = self.lexer.peek_token()
             self.lexer.advance()
             right = self.parse_equality()
-            left = BinOp(op,left,right)
+            left = BinOp(op.lineNumber, op.val,left,right)
         return left
     
     def parse_logic_or(self) :
@@ -300,7 +318,7 @@ class Parser:
             op = self.lexer.peek_token()
             self.lexer.advance()
             right = self.parse_logic_and()
-            left = BinOp(op,left,right)
+            left = BinOp(op.lineNumber, op.val,left,right)
         return left
     
     def parse_assign(self):
@@ -310,7 +328,7 @@ class Parser:
             op = self.lexer.peek_token()
             self.lexer.advance()
             t = self.parse_assign()
-            return BinOp(op,l,t)
+            return BinOp(op.lineNumber, op.val,l,t)
         return l
     
     def parse_expr(self):
@@ -333,7 +351,7 @@ class Parser:
                 return self.parse_remove()
             case Keyword(lineNumber, "insert"):
                 return self.parse_insert()
-            case Keyword(lineNumber,"{") :
+            case Operator(lineNumber,"{") :
                 return self.parse_block()
             case _:
                 return self.parse_expr_stmt()
@@ -362,33 +380,48 @@ class Parser:
         return lst
     
     def parse_fundec(self):
+        lineNumber = self.lexer.peek_token().lineNumber
+
         self.lexer.match(Keyword(0,"func"))
 
+        # Checking the return type of the function
+        rt = self.lexer.peek_token()
         if self.lexer.peek_token().val not in dtypes:
-            ParseError(self, f"Expected a data type but given {self.lexer.peek_token().val}", self.lexer.peek_token().lineNumber)
+            ParseError(self, f"Expected a data type but given {rt.val}", rt.lineNumber)
         
+        # Assigning the return type of the function
         r = self.lexer.peek_token()
         r_type = dtypes_dict[r.val]
         self.lexer.advance()
-
-        func = self.lexer.peek_token()
+        
+        # Generating a Variable for the function
+        f = self.lexer.peek_token()
+        func = Variable(f.lineNumber, f.val, generate_id())
         self.lexer.advance()
+
+        # Checking for the "("
         self.lexer.match(Operator(0,"("))
 
+        # Obtaining all the parameters and the parameter types
         param_types = []
         params = []
         while (self.lexer.peek_token().val != ")") :
-            dt = self.lexer.peek_token()
+            dt = self.lexer.peek_token()    # The data type of the parameter
+            
+            # Invalid Data Type for the parameter
             if dt.val not in dtypes:
-                ParseError(self, f"Expected a data type but given {self.lexer.peek_token().val}", self.lexer.peek_token().lineNumber)
+                ParseError(self, f"Expected a data type but given {dt.val}", dt.lineNumber)
 
+            # Appending the data type to the params_type list
             param_types.append(dtypes_dict[dt.val])
             self.lexer.advance()
 
+            # Obtaining the parameter name and appending to the params list
             iden = self.lexer.peek_token()
             self.lexer.advance()
-            params.append(iden)
+            params.append(Variable(iden.lineNumber, iden.val, generate_id()))
 
+            # Checking for the "," if there are more parameters
             if self.lexer.peek_token().val == ',':
                 self.lexer.advance()
 
@@ -399,96 +432,177 @@ class Parser:
             self.lexer.advance()
         else :
             func_block = self.parse_block()
-        
 
-        return DeclareFun(func , r_type, param_types,params,func_block)
-        
+        return DeclareFun(lineNumber, func , r_type, param_types, params, func_block)
     
     def parse_vardec(self):
+        isConst=None # Variable indicating the constness of the variable
         
-        found=None
+        # The l value
         l=self.lexer.peek_token()
+
+        # In case the variable is declared as const
         if(l.val == "const"):
             self.lexer.match(l)
-            found=True
-        elif l.val == "list":
-            dtypes_ = []
-            self.lexer.advance()
-            while(self.lexer.peek_token().val == "list"):
-                dtypes_.append(zList)
-                self.lexer.advance()
-            if (self.lexer.peek_token().val not in dtypes_dict):
-                ParseError(self, "Expected data type.", self.lexer.peek_token().lineNumber)
-            dtypes_.append(dtypes_dict[self.lexer.peek_token().val])
-            self.lexer.advance()
-            if (not isinstance(self.lexer.peek_token(), Identifier)):
-                ParseError(self, "Expected Identifier.", self.lexer.peek_token().lineNumber)
-            var = self.lexer.peek_token()
-            self.lexer.advance()
-            lst = nil()
-            if (self.lexer.peek_token().val == "="):
-                self.lexer.advance()
-                lst = self.parse_expr()
-                try:
-                    self.set_list_type(dtypes_, 0, lst)
-                except:
-                    ParseError(self, f"Dimensions of the given list and initializer list do not match", self.lexer.peek_token().lineNumber)
-            else:
-                lst = self.empty_list_type(dtypes_, 0)
-            self.lexer.match(Operator(0, ";"))
-            return Declare(var, lst, zList, False)
-
+            isConst=True
         else:
-            found=False
+            isConst=False
+
         match self.lexer.peek_token():
             case Keyword(lineNumber, "int"):
                 self.lexer.match(Keyword(0, "int"))
-                b = self.lexer.peek_token()
-                if(b.val in keywords or b.val in dtypes or b.val in ["true","false"]):
-                    ParseError(self, "Expected a '=' or ';'", lineNumber)
-                self.lexer.match(b)
+                
+                # Getting the identifier
+                iden = self.lexer.peek_token()
+
+                # Checking if the identifier is a keyword
+                if(iden.val in keywords):
+                    ParseError(self, "Cannot use Keywords as Identifiers", lineNumber)
+                # Checking if the identifier is a data type
+                elif iden.val in dtypes or iden.val in ["true","false"]:
+                    ParseError(self, "Expected an Identifier", lineNumber)
+                self.lexer.match(iden)
+
+                # Creating a varibale object
+                var = Variable(iden.lineNumber, iden.val, generate_id())
+
+                # Checking if the variable is declared without an initial value
                 if(self.lexer.peek_token().val != "="):
                     self.lexer.match(Operator(0, ";"))
-                    return Declare(b, nil(), Int, found)
+                    return Declare(lineNumber, var, nil(), Int, isConst)
+                
+                # Getting the initial value of the variable
                 self.lexer.match(Operator(0, "="))
                 ans=self.parse_expr_stmt()
-                return Declare(b,ans, Int, found)
+
+                return Declare(lineNumber, var ,ans, Int, isConst)
+            
             case Keyword(lineNumber, "float"):
                 self.lexer.match(Keyword(0, "float"))
-                b=self.lexer.peek_token()
-                if(b.val in keywords or b.val in dtypes or b.val in ["true","false"]):
-                    ParseError(self, "Expected a '=' or ';'", lineNumber)
-                self.lexer.match(b)
+                
+                # Getting the identifier
+                iden = self.lexer.peek_token()
+
+                # Checking if the identifier is a keyword
+                if(iden.val in keywords):
+                    ParseError(self, "Cannot use Keywords as Identifiers", lineNumber)
+                # Checking if the identifier is a data type
+                elif iden.val in dtypes or iden.val in ["true","false"]:
+                    ParseError(self, "Expected an Identifier", lineNumber)
+                self.lexer.match(iden)
+
+                # Creating a varibale object
+                var = Variable(iden.lineNumber, iden.val, generate_id())
+
+                # Checking if the variable is declared without an initial value
                 if(self.lexer.peek_token().val != "="):
-                    self.lexer.match(Operator(";"))
-                    return Declare(b,nil(), Float, found)
+                    self.lexer.match(Operator(0, ";"))
+                    return Declare(lineNumber, var, nil(), Float, isConst)
                 self.lexer.match(Operator(0, "="))
+
+                # Getting the initial value of the variable
                 ans=self.parse_expr_stmt()
-                return Declare(b,ans, Float, found)
+
+                return Declare(lineNumber, var, ans, Float, isConst)
+            
             case Keyword(lineNumber, "string"):
                 self.lexer.match(Keyword(0, "string"))
-                b=self.lexer.peek_token()
-                if(b.val in keywords or b.val in dtypes or b.val in ["true","false"]):
-                    ParseError(self, "Expected a '=' or ';'", lineNumber)
-                self.lexer.match(b)
+                 # Getting the identifier
+                iden = self.lexer.peek_token()
+
+                # Checking if the identifier is a keyword
+                if(iden.val in keywords):
+                    ParseError(self, "Cannot use Keywords as Identifiers", lineNumber)
+                # Checking if the identifier is a data type
+                elif iden.val in dtypes or iden.val in ["true","false"]:
+                    ParseError(self, "Expected an Identifier", lineNumber)
+                self.lexer.match(iden)
+
+                # Creating a varibale object
+                var = Variable(iden.lineNumber, iden.val, generate_id())
+
+                # Checking if the variable is declared without an initial value
                 if(self.lexer.peek_token().val != "="):
-                    self.lexer.match(Operator(";"))
-                    return Declare(b,nil(), Str, found)
-                self.lexer.match(Operator(0,"="))
+                    self.lexer.match(Operator(0, ";"))
+                    return Declare(lineNumber, var, nil(), Str, isConst)
+                self.lexer.match(Operator(0, "="))
+
+                # Getting the initial value of the variable
                 ans=self.parse_expr_stmt()
-                return Declare(b,ans, Str , found)
+
+                return Declare(lineNumber, var, ans, Str, isConst)
+            
             case Keyword(lineNumber, "boolean"):
                 self.lexer.match(Keyword(0, "boolean"))
-                b=self.lexer.peek_token()
-                if(b.val in keywords or b.val in dtypes or b.val in ["true","false"]):
-                    ParseError(self, "Expected a '=' or ';'", lineNumber)
-                self.lexer.match(b)
-                if(self.lexer.peek_token().val !="="):
+                 # Getting the identifier
+                iden = self.lexer.peek_token()
+
+                # Checking if the identifier is a keyword
+                if(iden.val in keywords):
+                    ParseError(self, "Cannot use Keywords as Identifiers", lineNumber)
+                # Checking if the identifier is a data type
+                elif iden.val in dtypes or iden.val in ["true","false"]:
+                    ParseError(self, "Expected an Identifier", lineNumber)
+                self.lexer.match(iden)
+
+                # Creating a varibale object
+                var = Variable(iden.lineNumber, iden.val, generate_id())
+
+                # Checking if the variable is declared without an initial value
+                if(self.lexer.peek_token().val != "="):
                     self.lexer.match(Operator(0, ";"))
-                    return Declare(b,nil(), Bool, found)
+                    return Declare(lineNumber, var, nil(), Bool, isConst)
                 self.lexer.match(Operator(0, "="))
+
+                # Getting the initial value of the variable
                 ans=self.parse_expr_stmt()
-                return Declare(b,ans, Bool , found)
+
+                return Declare(lineNumber, var, ans, Bool, isConst)
+            
+            case Keyword(lineNumber, "list"):
+                # Disallowing constant lists
+                if (isConst):
+                    ParseError(self, "Cannot declare a list as const.", lineNumber)
+                
+                # Getting the data type of the list
+                dtypes_ = [] # Holds the actual data type list declared i.e., [zlist zlist Int]
+                self.lexer.advance()
+                while(self.lexer.peek_token().val == "list"):
+                    dtypes_.append(zList)
+                    self.lexer.advance()
+                dt = self.lexer.peek_token()
+                if (dt.val not in dtypes_dict):
+                    ParseError(self, "Expected data type.", dt.lineNumber)
+                dtypes_.append(dtypes_dict[dt.val])
+                self.lexer.advance()
+                
+                iden = self.lexer.peek_token()
+                
+                # Verifying the identifier
+                if (not isinstance(iden, Identifier)):
+                    ParseError(self, "Expected Identifier.", iden.lineNumber)
+                self.lexer.advance()
+
+                # Creating the variable object
+                var = Variable(iden.lineNumber, iden.val, generate_id())
+
+                lst = nil()
+                if (self.lexer.peek_token().val == "="):
+                    self.lexer.advance()
+
+                    # Attaining the list from the initializer list
+                    lst = self.parse_expr()
+                    try:
+                        # Setting the list types as well as ensuring the list dimensions match
+                        self.set_list_type(dtypes_, 0, lst)
+                    except:
+                        # Raising the Dimension error
+                        ParseError(self, f"Dimensions of the given list and initializer list do not match", self.lexer.peek_token().lineNumber)
+                else:
+                    # Generating empty list
+                    lst = self.empty_list_type(dtypes_, 0)
+                self.lexer.match(Operator(0, ";"))
+                return Declare(lineNumber, var, lst, zList, False)
             
     def parse_declare(self):
         if self.lexer.peek_token().val == "func" :
@@ -519,7 +633,7 @@ def parse(string):
 
     # Returning the obtained AST as well as the flag isParseError
     programAST = Parser.parse_program (
-        Parser.from_lexer(Lexer.from_stream(Stream.from_string(string)))
+        Parser(Lexer.from_stream(Stream.from_string(string)))
     )
 
     # Reraising the ParseException if isParseError is True

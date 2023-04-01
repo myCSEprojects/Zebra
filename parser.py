@@ -4,6 +4,7 @@ from typing import Optional, NewType
 from sim import *
 from lexer import *
 from error import ParseError, ParseException, TokenException
+import pprint
 
 # Global value denoting if the Parse Error occured
 isParseError = False
@@ -256,18 +257,27 @@ class Parser:
         if(op.val in ["~","-"]) :
             self.lexer.advance()
             right = self.parse_unary()
-            return UnOp(right,op.val)
+            return UnOp(op.lineNumber, op.val,right)
         elif (op.val == "length"):
             return self.parse_len()
         return self.parse_atom()
     
-    def parse_mult(self):
+    def parse_power(self):
         left = self.parse_unary()
+        op = self.lexer.peek_token()
+        if(op.val == "^"):
+            self.lexer.advance()
+            right = self.parse_power()
+            return BinOp(op.lineNumber, op.val,left, right)
+        return left
+    
+    def parse_mult(self):
+        left = self.parse_power()
         while True:
             match self.lexer.peek_token():
                 case Operator(lineNumber, op) if op in "*/%" or op == "//":
                     self.lexer.advance()
-                    m = self.parse_unary()
+                    m = self.parse_power()
                     left = BinOp(lineNumber, op, left, m)
                 case _:
                     break
@@ -643,9 +653,14 @@ def parse(string):
     return programAST
 
 def test_parse():
-    print(parse("list int a = [1,2,3]; append(2,a); remove(2,a); insert(0,100,a); a[0:2];")) 
+    # print(parse("list int a = [1,2,3]; append(2,a); remove(2,a); insert(0,100,a); a[0:2];")) 
     # print(parse("append(2,a)"))
     # print(parse("func int add(int a,int b) { a+b;} add(2, 3);"))
-    
+    pp = pprint.PrettyPrinter(indent=4)
+    p = parse("2+3^2;")
+    pp.pprint(p)
+    k = evaluate(p)
+    print(k)
+
 if __name__ == "__main__" :
     test_parse()

@@ -461,6 +461,10 @@ def evaluate(program: AST, scopes: Scopes = None):
                     return Bool(Bool.truthy(firstOperand).value or Bool.truthy(secondOperand).value)
                 case "=":
                     return scopes.updateVariable(firstOperand, secondOperand)
+                case "^":
+                    if isinstance(firstOperand, Int) and isinstance(secondOperand, Int):
+                        return Int(firstOperand.value ** secondOperand.value)
+                    return Float(firstOperand.value ** secondOperand.value)
 
         case UnOp(lineNumber, operator, operand):
             operand = evaluate(operand, scopes)
@@ -529,13 +533,12 @@ def evaluate(program: AST, scopes: Scopes = None):
                 ans = evaluate(line, scopes)
             return ans
 
-        case While(lineNumber, condition, block) :
-            evaluated_condition = evaluate(condition,scopes)
-            if (evaluated_condition.value):
+        case While(lineNumber, condition,block) :
+            while(evaluate(condition,scopes).value):
                 evaluate(block,scopes)
-                return evaluate(While(lineNumber, condition,block),scopes)
-            else:
-                return Bool(False)
+            
+            return nil()
+
         
         case For(lineNumber, initial,condition,block) :
             # evaluating the initialization and declaration condition

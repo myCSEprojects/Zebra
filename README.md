@@ -84,10 +84,18 @@
 
     $$(Int)\%(Int) \rightarrow Int$$
     *Note:* The operator takes care of the Zero Division Error(**Runtime**) 
+    
+7.  `^` : Exponentiation operator
+    
+    **Operands**: a (`Int|Float`), b(`Int|Float`)  
+    
+    **Returns**: (`Int|Float`) - $a^{b}$ 
+    
+    $$(Float|Int)^{(Float|Int)} \rightarrow (Float|Int)$$
 
 ### Binary Bitwise Operators
 
-7.  `<<` : Left shift operator 
+8.  `<<` : Left shift operator 
 
     **Operands**: a (`Int`), b (`Int`), $b \in I ^ {+}$
 
@@ -96,7 +104,7 @@
     $$(Int)<<(Int) \rightarrow Int$$
     *Note:* The operator takes care of the Negative left operand by raising exception.
 
-8.  `>>` : Right shift operator 
+9.  `>>` : Right shift operator 
 
     **Operands**: a (`Int`), b (`Int`), $b \in I ^ {+}$
 
@@ -105,7 +113,7 @@
     $$(Int)>>(Int) \rightarrow Int$$
     *Note:* The operator takes care of the Negative left operand by raising exception.
 
-9.  `&` : Bitwise AND operator 
+10.  `&` : Bitwise AND operator 
 
     **Operands**: a (`Int`), b (`Int`)
 
@@ -113,7 +121,7 @@
 
     $$(Int) \And (Int) \rightarrow Int$$
 
-10. `|` : Bitwise OR operator 
+11. `|` : Bitwise OR operator 
 
     **Operands**: a (`Int`), b (`Int`)
 
@@ -123,7 +131,7 @@
 
 ### Binary Comparision Operators
 
-11. `<=` : Less than or equals operator 
+12. `<=` : Less than or equals operator 
 
     *Note:* Both the operands must be explicitly of the same type.
 
@@ -133,7 +141,7 @@
 
     $$(Type) <= (Type) \rightarrow Bool$$
 
-12. `<` : Less than operator 
+13. `<` : Less than operator 
 
     *Note:* Both the operands must be explicitly of the same type.
 
@@ -143,7 +151,7 @@
 
     $$(Type) < (Type) \rightarrow Bool$$
 
-13. `>` : Greater than operator 
+14. `>` : Greater than operator 
 
     *Note:* Both the operands must be explicitly of the same type.
 
@@ -153,7 +161,7 @@
 
     $$(Type) > (Type) \rightarrow Bool$$
 
-14. `>=` : Greater than or equals operator 
+15. `>=` : Greater than or equals operator 
 
     *Note:* Both the operands must be explicitly of the same type.
 
@@ -163,7 +171,7 @@
 
     $$(Type) >= (Type) \rightarrow Bool$$
 
-15. `==` : Equality operator 
+16. `==` : Equality operator 
 
     *Note:* Both the operands must be explicitly of the same type.
 
@@ -173,7 +181,7 @@
 
     $$(Type) == (Type) \rightarrow Bool$$
 
-16. `!=` : not equals operator 
+17. `!=` : not equals operator 
 
     *Note:* Both the operands must be explicitly of the same type.
 
@@ -185,7 +193,7 @@
 
 ### Binary Logical Operators
 
-17. `&&` : Logical AND operator 
+18. `&&` : Logical AND operator 
 
     **Operands**: a (`Bool`), b (`Bool`)
 
@@ -193,7 +201,7 @@
 
     $$(Bool) \And\And (Bool) \rightarrow Bool$$
 
-18. `||` : Logical OR operator 
+19. `||` : Logical OR operator 
 
     **Operands**: a (`Bool`), b (`Bool`)
 
@@ -203,7 +211,7 @@
 
 ### Unary arithematic Operators
 
-19. `-` : arithematic negation operator
+20. `-` : arithematic negation operator
 
     **Operands**: a (`Float|Int`)
 
@@ -214,7 +222,7 @@
 
 ### Unary Logical Operators
 
-20. `-` : Logical negation operator
+21. `-` : Logical negation operator
 
     **Operands**: a (`Bool`)
 
@@ -224,7 +232,7 @@
  
 ### Assignment Operator
 
-21.  `=` : Assignment operator
+22.  `=` : Assignment operator
     
 **Operands**: x (`Variable`), a (`AST`)
 

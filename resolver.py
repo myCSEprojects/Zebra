@@ -125,10 +125,12 @@ def resolve(program: AST, scopes : ResolverScopes = None):
             resolvedLines = [resolve(line, scopes) for line in lines]
             return Seq(resolvedLines)
         
-        case PRINT(lineNumber, print_stmts, sep):
+        case PRINT(lineNumber, print_stmts, sep,end):
             # Resolving the print statement
             resolvedPrintStmt = [resolve(print_stmt, scopes) for print_stmt in print_stmts]
-            return PRINT(lineNumber, resolvedPrintStmt, sep)
+            resolvedSep = resolve(sep, scopes)
+            resolvedEnd = resolve(end, scopes)
+            return PRINT(lineNumber, resolvedPrintStmt, resolvedSep, resolvedEnd)
         
         case BinOp(lineNumber, op, left, right):
             # Resolving the left and right

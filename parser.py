@@ -121,13 +121,34 @@ class Parser:
         self.lexer.match(Operator(0, "("))
         pseq=[]
         pseq.append(self.parse_expr())
+        sep_ = Str(" ")
+        end_ = Str("\n")
         while(self.lexer.peek_token().val != ")"):
             self.lexer.match(Operator(0, ","))
-            t=self.parse_expr()
-            pseq.append(t)
+            if (self.lexer.peek_token().val == "sep"):
+                self.lexer.match(Keyword(0, "sep"))
+                self.lexer.match(Operator(0, "="))
+                sep = self.lexer.peek_token()
+                if not isinstance(sep, String):
+                    ParseError(self, f"Expected a string", sep.lineNumber)
+                self.lexer.advance()
+                sep_ = Str(sep.val)
+                
+            elif (self.lexer.peek_token().val == "end"):
+                self.lexer.match(Keyword(0, "end"))
+                self.lexer.match(Operator(0, "="))
+                end = self.lexer.peek_token()
+                if not isinstance(end, String):
+                    ParseError(self, f"Expected a string", end.lineNumber)
+                self.lexer.advance()
+                end_ = Str(end.val)
+                
+            else:
+                t=self.parse_expr()
+                pseq.append(t)
         self.lexer.match(Operator(0, ")"))
         self.lexer.match(Operator(0, ";"))
-        return PRINT(lineNumber, pseq)
+        return PRINT(lineNumber, pseq,sep_,end_)
 
     def parse_append(self):
         lineNumber = self.lexer.peek_token().lineNumber
@@ -294,13 +315,25 @@ class Parser:
                 case _:
                     break
         return left
+
+    def parse_shift(self):
+        left = self.parse_add()
+        while True:
+            match self.lexer.peek_token():
+                case Operator(lineNumber, op) if op in ["<<",">>"]:
+                    self.lexer.advance()
+                    m = self.parse_add()
+                    left = BinOp(lineNumber, op, left, m)
+                case _:
+                    break
+        return left
     
     def parse_comparision(self):
-        left = self.parse_add()
+        left = self.parse_shift()
         while(isinstance(self.lexer.peek_token(), Operator) and self.lexer.peek_token().val in ["<",">",">=","<="]):
             op = self.lexer.peek_token()
             self.lexer.advance()
-            right = self.parse_add()
+            right = self.parse_shift()
             left =  BinOp(op.lineNumber, op.val, left, right)
         return left
     
@@ -657,7 +690,7 @@ def test_parse():
     # print(parse("append(2,a)"))
     # print(parse("func int add(int a,int b) { a+b;} add(2, 3);"))
     pp = pprint.PrettyPrinter(indent=4)
-    p = parse("2+3^2;")
+    p = parse("int a = 8 << 1;")
     pp.pprint(p)
     k = evaluate(p)
     print(k)

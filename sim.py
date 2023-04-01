@@ -286,7 +286,8 @@ class UnOp(metadata):
 @dataclass
 class PRINT(metadata):
     print_stmt: List['AST']
-    sep: Optional[str]=' '
+    sep: Optional[str]=Str(' ')
+    end: Optional[str]=Str('\n')
 
 @dataclass
 class Seq:
@@ -520,11 +521,14 @@ def evaluate(program: AST, scopes: Scopes = None):
                     RuntimeError("Index out of bounds", lineNumber, "indexError")
                 return zList(elem.dtype, elem.elements[first.value:second.value])
         
-        case PRINT(lineNumber, print_stmt, sep):
-            for stmt in print_stmt:
+        case PRINT(lineNumber, print_stmt, sep,end):
+            for i,stmt in  enumerate(print_stmt):
                 out=evaluate(stmt,scopes)
-                print(out.value, end=sep)
-            print()
+                if (i==len(print_stmt)-1):
+                    print(out.value, end=end.value)
+                else:
+                    print(out.value, end=sep.value)
+            
             return nil()
 
         case Seq(lines):

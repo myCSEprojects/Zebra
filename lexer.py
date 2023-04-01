@@ -12,7 +12,7 @@ class Stream:
     pos: int
 
     def from_string(s):
-        return Stream(s, 0)
+        return Stream(bytes(s, 'utf-8').decode('unicode-escape'), 0)
 
     def next_char(self):
         if self.pos >= len(self.source):
@@ -69,7 +69,7 @@ Integer | Boolean | Keyword | Identifier | Operator | Flt
 class EndOfTokens(Exception):
     pass
 
-keywords = "if else while for zout list append remove length insert func slice index".split()
+keywords = "if else while for zout list append remove length insert func slice index end sep".split()
 dtypes = "int float string boolean const list".split()
 symbolic_operators = "+ - * / < > ! = ; { } ( ) [ ] , ~ % & | ~ @ ^ :".split()
 str_denote = ["'",'"']

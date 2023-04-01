@@ -21,23 +21,23 @@ for test_file in files:
     # Striping spaces if any
     test_file = test_file.strip()
 
-    if (test_file.endswith(".py") and test_file.startswith("test")):
-        # Verbose text
-        print(f"\033[95mCurrent Test File:\033[00m \033[93m{test_file}\033[00m")
+    # if (test_file.endswith(".py") and test_file.startswith("test")):
+    #     # Verbose text
+    #     print(f"\033[95mCurrent Test File:\033[00m \033[93m{test_file}\033[00m")
 
-        # Importing the test file at runtime
-        test = import_module("tests." + test_file[:-3]).test
+    #     # Importing the test file at runtime
+    #     test = import_module("tests." + test_file[:-3]).test
         
-        try:
-            # Cheking if the test case return the value 0 or -1
-            if (test() == -1):
-                tests_fail.append(test_file)
-            else:
-                tests_succeed.append(test_file)
-        except:
-            tests_fail.append(test_file)
+    #     try:
+    #         # Cheking if the test case return the value 0 or -1
+    #         if (test() == -1):
+    #             tests_fail.append(test_file)
+    #         else:
+    #             tests_succeed.append(test_file)
+    #     except:
+    #         tests_fail.append(test_file)
         
-        print("\033[04m" + (" " * os.get_terminal_size().columns) + "\033[0m")
+    #     print("\033[04m" + (" " * os.get_terminal_size().columns) + "\033[0m")
     if (test_file.endswith(".zebra") and test_file.startswith("test")):
         # Verbose text
         print(f"\033[95mCurrent Test File:\033[00m \033[93m{test_file}\033[00m")

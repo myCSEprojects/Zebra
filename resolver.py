@@ -190,3 +190,8 @@ def resolve(program: AST, scopes : ResolverScopes = None):
             # Resolving the variable
             resolvedVar = resolve(var, scopes)
             return list_insert(lineNumber, resolvedIndex, resolvedElement, resolvedVar)
+        
+        case list_pop(lineNumber, var):
+            # Resolving the variable
+            resolvedVar = resolve(var, scopes)
+            return list_pop(lineNumber, resolvedVar)

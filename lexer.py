@@ -69,7 +69,7 @@ Integer | Boolean | Keyword | Identifier | Operator | Flt
 class EndOfTokens(Exception):
     pass
 
-keywords = "if else while for zout list append remove length insert func slice index end sep".split()
+keywords = "if else while for zout list append remove length insert func slice index end sep pop".split()
 dtypes = "int float string boolean const list".split()
 symbolic_operators = "+ - * / < > ! = ; { } ( ) [ ] , ~ % & | ~ @ ^ :".split()
 str_denote = ["'",'"']

@@ -286,7 +286,7 @@ language syntax:
 `list_append` : `append(element, list_name);`  
 `list_remove` : `remove(index, list_name);`  
 `list_insert` : `insert(index, element, list_name);`  
-`Slice` : `slice list_name start:end`  
+`Slice` : `list_name[start:end]`  
 `list_len` : `length(list_name)`
 
 ## Operator Precedence
@@ -304,7 +304,6 @@ The Operator Precedence from lowest to highest.
 |unary|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;~&nbsp;&nbsp;&nbsp;-|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Right
 ## CFG of the parser
 **The Context Free Grammar of our language:**
-
 $$
 \begin{align}
 ~program  &\rightarrow  (declaration)^*~~ EOF \\

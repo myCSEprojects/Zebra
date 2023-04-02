@@ -62,6 +62,12 @@ def typecheckList(lst: zList, lineNumber: int, scopes:Scopes):
             typecheckList(element, lineNumber, scopes)
     return zList
 
+def dimensions(lst):
+    if isinstance(lst, zList):
+        return [len(lst.elements)] + dimensions(lst.elements[0])
+    else:
+        return []
+
 def typecheck(program: AST, scopes = None):
     if (scopes == None):
         scopes = Scopes()
@@ -96,12 +102,23 @@ def typecheck(program: AST, scopes = None):
                 case  "+":
                     if (issubclass(firstOperandType, Str) and not checkTypeTwo(firstOperandType, secondOperandType, Str, Str)):
                         typeCheckError(errorString, lineNumber)
+                    elif (issubclass(firstOperandType, zList) and not checkTypeTwo(firstOperandType, secondOperandType, zList, zList)):
+                        typeCheckError(errorString, lineNumber)
                     elif (issubclass(firstOperandType, Number) and not checkTypeTwo(firstOperandType, secondOperandType, Number, Number)):
                         typeCheckError(errorString, lineNumber)
+
                     if (issubclass(firstOperandType, Float) or issubclass(secondOperandType, Float)):
                         return Float
-                    elif (issubclass(firstOperandType, Str) and issubclass(secondOperandType, Str)):
+                    elif (issubclass(firstOperandType, Str)):
                         return Str
+                    elif (issubclass(firstOperandType, zList)):
+                        fo=scopes.getVariable(firstOperand)
+                        so=scopes.getVariable(secondOperand)
+                        l1=dimensions(fo)
+                        l2=dimensions(so)
+                        if(l1!=l2):
+                            typeCheckError(f"Cannot append arrays of two different dimensions", lineNumber)
+                        return zList
                     else:
                         return Int
                     
@@ -116,7 +133,7 @@ def typecheck(program: AST, scopes = None):
 
                 case "/":
                     if not checkTypeTwo(firstOperandType, secondOperandType, Number, Number):
-                        typeCheckError(errorString, operator.lineNumber)
+                        typeCheckError(errorString, lineNumber)
                     return Float
                 
                 case "*":
@@ -126,7 +143,7 @@ def typecheck(program: AST, scopes = None):
                     elif (issubclass(firstOperandType,Int) and issubclass(secondOperandType,Str)):
                         return Str
                     elif not checkTypeTwo(firstOperandType, secondOperandType, Number, Number):
-                        typeCheckError(errorString, operator.lineNumber)
+                        typeCheckError(errorString, lineNumber)
                     else:
                         if (issubclass(firstOperandType, Float) | issubclass(secondOperandType, Float)):
                             return Float
@@ -135,36 +152,36 @@ def typecheck(program: AST, scopes = None):
                 
                 case "//" :
                     if not checkTypeTwo(firstOperandType, secondOperandType, Number, Number):
-                        typeCheckError(errorString, operator.lineNumber)
+                        typeCheckError(errorString, lineNumber)
                     return Int
                 
                 case "%" | "<<" | ">>" | "&" | "|":
                     if not checkTypeTwo(firstOperandType, secondOperandType, Int, Int):
-                        typeCheckError(errorString, operator.lineNumber)
+                        typeCheckError(errorString, lineNumber)
                     return Int
                 
                 
                 case "<=" | "<" | "==" | ">" | ">=" | "!=":
                     if not checkSameType(firstOperandType, secondOperandType):
-                        typeCheckError(errorString, operator.lineNumber)
+                        typeCheckError(errorString, lineNumber)
                     return Bool
                 
                 case "&&" | "||": 
                     if not checkTypeTwo(firstOperandType, secondOperandType, AST, AST):
-                        typeCheckError(errorString, operator.lineNumber)
+                        typeCheckError(errorString, lineNumber)
                     return Bool
                 
                 case "=":                    
                     # Prevent assignment for lists (for now)
                     if (issubclass(secondOperandType, zList)):
-                        typeCheckError(f"Cannot assign a list to a variable.", operator.lineNumber)
+                        typeCheckError(f"Cannot assign a list to a variable.", lineNumber)
 
                     scopes.updateVariable(firstOperand, createDummyObject(secondOperandType))
                     return secondOperandType
                 
                 case "^":
                     if not checkTypeTwo(firstOperandType, secondOperandType, Number, Number):
-                        typeCheckError(errorString, operator.lineNumber)
+                        typeCheckError(errorString, lineNumber)
                     if (issubclass(firstOperandType, Float) or issubclass(secondOperandType, Float)):
                         return Float
                     else:
@@ -197,11 +214,13 @@ def typecheck(program: AST, scopes = None):
             # Make sure all the elements of the list are of the type zList.dtype
             if (dtype == zList):
                 tempval=value
-                value = typecheckList(value, var.lineNumber, scopes)
+                value = typecheckList(value, lineNumber, scopes)
                 scopes.declareVariable(var, tempval, dtype, isConst)
             else:
                 # Evaluating the expression before declaration
+                
                 value = typecheck(value, scopes)
+                
                 # Declaring
                 scopes.declareVariable(var, createDummyObject(value), dtype, isConst)
             return dtype
@@ -214,6 +233,9 @@ def typecheck(program: AST, scopes = None):
                 typeCheckError(f"Slice operation not defined for {type(tc).__name__}", lineNumber)
             if not (issubclass(tf, Int) or issubclass(ts, Int)):
                 typeCheckError(f"Slice indices must be of {Int} type", lineNumber)
+            if(issubclass(ts,nil) and issubclass(tc,zList)):
+                element_type = scopes.getVariable(value_).dtype
+                return element_type
             return tc
 
         case While(lineNumber, condition, block) :            #checking while condition data type
@@ -253,9 +275,6 @@ def typecheck(program: AST, scopes = None):
             end = typecheck(end, scopes)
             for exp in exps:
                 exp = typecheck(exp, scopes)
-                # Make sure that the user does not ask for printing a list
-                if (issubclass(exp, zList)):
-                    typeCheckError(f"Cannot print a list.", lineNumber, "notPrintable")
                 if (not issubclass(exp, AST)):
                     raise Exception(f"Invalid expression {exp} in PRINT")
                 if (not issubclass(sep, Str)):
@@ -288,9 +307,18 @@ def typecheck(program: AST, scopes = None):
             
         case list_len(lineNumber, l):
             l = typecheck(l, scopes)
-            if not(issubclass(l, zList)):
-                typeCheckError(f"Cannot remove an element from {l}.", lineNumber)
+            if not(issubclass(l, zList|Str)):
+                typeCheckError(f"length attribute not defined for variable of type  {l.__name__}.", lineNumber)
             return Int
+        
+        case list_pop(lineNumber, list_name):
+            var_type = scopes.getVariableType(list_name)
+            lIsConst = scopes.getVariableIsConst(list_name)
+            if not(issubclass(var_type, zList)):
+                typeCheckError(f"Cannot popout an element from {var_type}.", lineNumber)
+            elif lIsConst:
+                typeCheckError(f"Cannot popout an element from a constant list.", lineNumber, "constError")
+            return var_type
         
         case list_insert(lineNumber, index, element, list_name):
             var_type = scopes.getVariableType(list_name)
@@ -326,7 +354,7 @@ def typecheck(program: AST, scopes = None):
 
             # 4. make sure that the return types are the same
             if (not(issubclass(retType, return_type) and issubclass(retType, return_type))):
-                typeCheckError(f"Not matching the expected return type of the function", f.lineNumber)
+                typeCheckError(f"Not matching the expected return type of the function", lineNumber)
             
             # 5. return nil as declaration statements have no return type
             return nil

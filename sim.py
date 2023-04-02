@@ -4,6 +4,19 @@ from typing import Union, Optional, List, Dict
 from lexer import Keyword, Operator, Identifier
 from error import RuntimeError, typeCheckError, resolveError
 
+def traverse_list(lst):
+    '''
+    Utility for printing lists
+    '''
+    print_lst = []
+    for ele in lst.elements:
+        if isinstance(ele, zList):
+            list_ele = traverse_list(ele)
+            print_lst.append(list_ele)
+        else:
+            print_lst.append(ele.value)
+    return print_lst
+
 @dataclass
 class metadata:
     '''
@@ -115,7 +128,6 @@ class Scopes:
         Only declares a variable in the current scope
         '''
         assert(len(self.stack) != 0)
-
         # Avoiding redeclaration in the same scope
         # Implicit type conversion from float to int and int to float
         if (issubclass(dtype, Int)):
@@ -192,6 +204,10 @@ class Scopes:
             for v in self.stack[i]:
                 if v.id == var.id:
                     return self.stack[i][v][2]
+
+@dataclass
+class list_pop(metadata):
+    list_name : 'AST'
 
 @dataclass
 class Slice(metadata):
@@ -314,10 +330,11 @@ class FunCall(metadata):
     args: List['AST']
     
 # Defining the AST
-AST = Variable|BinOp|Bool|Int|Float|Declare|If|UnOp|Str|Slice|nil|PRINT|Seq|For|DeclareFun|FunCall|zList|list_append|list_insert|list_len|list_remove
+AST = Variable|BinOp|Bool|Int|Float|Declare|If|UnOp|Str|Slice|nil|PRINT|Seq|For|DeclareFun|FunCall|zList|list_append|list_insert|list_len|list_remove|list_pop
 
 # Defining a Number as both an integer as  well as Float
 Number = Float|Int
+
 
 def evaluate(program: AST, scopes: Scopes = None):
     '''
@@ -372,6 +389,10 @@ def evaluate(program: AST, scopes: Scopes = None):
                     #code for string concatenation starts
                     if (isinstance(firstOperand, Str) and isinstance(secondOperand, Str)):
                         return Str(firstOperand.value + secondOperand.value)
+                    
+                    if (isinstance(firstOperand, zList) and isinstance(secondOperand, zList)):
+                        return zList(firstOperand.dtype, firstOperand.elements + secondOperand.elements)
+                    
                     #code for string concatenation ends
                     
                     firstOperand, secondOperand = BinOp.implicitIntToFloat(firstOperand, secondOperand)
@@ -510,13 +531,15 @@ def evaluate(program: AST, scopes: Scopes = None):
         case Slice(lineNumber, value_, first, second):
             elem = evaluate(value_, scopes)
             if(not(isinstance(elem, zList))):
-        
                 if (first.value>second.value or first.value < 0 or second.value > len(elem.value)):
                     RuntimeError("Index out of bounds", lineNumber, "indexError")
                 
                 return Str(elem.value[first.value:second.value])
             else:
-
+                if (first.value < 0 or first.value >= len(elem.elements)):
+                    RuntimeError("Index out of bounds", None, "indexError")
+                if(second==nil()):
+                    return elem.elements[first.value:first.value+1][0]
                 if (first.value>second.value or first.value < 0 or second.value > len(elem.elements)):
                     RuntimeError("Index out of bounds", lineNumber, "indexError")
                 return zList(elem.dtype, elem.elements[first.value:second.value])
@@ -524,10 +547,17 @@ def evaluate(program: AST, scopes: Scopes = None):
         case PRINT(lineNumber, print_stmt, sep,end):
             for i,stmt in  enumerate(print_stmt):
                 out=evaluate(stmt,scopes)
-                if (i==len(print_stmt)-1):
-                    print(out.value, end=end.value)
+                if(isinstance(out,zList)):
+                    l=traverse_list(out)
+                    if (i==len(print_stmt)-1):
+                        print(l, end=end.value)
+                    else:
+                        print(l, end=sep.value)
                 else:
-                    print(out.value, end=sep.value)
+                    if (i==len(print_stmt)-1):
+                        print(out.value, end=end.value)
+                    else:
+                        print(out.value, end=sep.value)
             
             return nil()
 
@@ -562,13 +592,23 @@ def evaluate(program: AST, scopes: Scopes = None):
         case list_remove(lineNumber, index , var):
             l=scopes.getVariable(var)
             # Checking if the index is out of bounds
+            index=evaluate(index, scopes)
             if (len(l.elements) <= index.value):
                 RuntimeError(f"list index out of bounds", lineNumber, 'indexError')
             return l.elements.pop(index.value)
         
         case list_len(lineNumber, var):
             l = evaluate(var, scopes)
-            return Int(len(l.elements))
+            if(isinstance(l,zList)):
+                return Int(len(l.elements))
+            elif(isinstance(l,Str)):
+                return Int(len(l.value))
+        
+        case list_pop(lineNumber, list_name):
+            l=scopes.getVariable(list_name)
+            if (len(l.elements) == 0):
+                RuntimeError(f"Cannot popout from an empty list", lineNumber, 'indexError')
+            return l.elements.pop()
         
         case list_insert(lineNumber, index, element, var):
             l = scopes.getVariable(var)

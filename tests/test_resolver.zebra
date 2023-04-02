@@ -1,7 +1,7 @@
 int a = 1;
 
 func int fib(int n){
-    n + a;
+    return n + a;
 }
 
 {

@@ -377,6 +377,10 @@ def typecheck(program: AST, scopes = None):
             # Returning the return type of the function
             return fn.return_type
         
+        case Return(lineNumber, exp):
+            exp = typecheck(exp, scopes)
+            return exp
+        
         case Block(blockStatements):
             # Return the type of the last statement in the seq in block
             return typecheck(blockStatements, scopes)

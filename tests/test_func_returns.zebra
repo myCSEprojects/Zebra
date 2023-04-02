@@ -1,0 +1,9 @@
+func int foo(int a,int b){
+    if (a == 1){
+        return a;
+    }
+    return a+b;
+}
+
+int c = foo(1,2);
+zout(c);

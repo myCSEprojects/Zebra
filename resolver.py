@@ -97,6 +97,11 @@ def resolve(program: AST, scopes : ResolverScopes = None):
             resolvedArgs = [resolve(arg, scopes) for arg in args]
             return FunCall(lineNumber, resolvedVar, resolvedArgs)
         
+        case Return(lineNumber, value):
+            # Resolving the value
+            resolvedValue = resolve(value, scopes)
+            return Return(lineNumber, resolvedValue)
+        
         case Block(blockStatements):
             # Resolving the block statements
             scopes.beginScope()

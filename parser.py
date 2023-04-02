@@ -21,7 +21,7 @@ dtypes_dict = {
     "int" : Int, 
     "float": Float, 
     "string": Str, 
-    "boolean": Bool
+    "boolean": Bool 
 }
 
 def get_AST_type(tk: Token):

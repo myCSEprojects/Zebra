@@ -654,7 +654,11 @@ def evaluate(program: AST, scopes: Scopes = None):
             
             match returnVal:
                 case Return(lineNumber, value):
-                    return evaluate(value, scopes)
+                    return_val = evaluate(value, scopes)
+                    if (isinstance(return_val, fn.return_type)):
+                        return return_val
+                    else:
+                        RuntimeError(f"Return type of function '{f.name}' not matched", lineNumber, 'typeError')
                 case _:
                     return nil()
             

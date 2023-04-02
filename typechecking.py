@@ -350,11 +350,12 @@ def typecheck(program: AST, scopes = None):
                 scopes.declareVariable(param, createDummyObject(param_type), param_type, False)
 
             # 3. type check the body
-            retType = typecheck(body, scopes)
+            # retType = typecheck(body, scopes)
+            typecheck(body, scopes)
 
             # 4. make sure that the return types are the same
-            if (not(issubclass(retType, return_type) and issubclass(retType, return_type))):
-                typeCheckError(f"Not matching the expected return type of the function", lineNumber)
+            # if (not(issubclass(retType, return_type) and issubclass(retType, return_type))):
+            #     typeCheckError(f"Not matching the expected return type of the function", lineNumber)
             
             # 5. return nil as declaration statements have no return type
             return nil

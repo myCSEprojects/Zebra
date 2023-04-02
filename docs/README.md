@@ -1,5 +1,15 @@
+## Links:
+
+Getting Started: [](getting_started.md)
+
+Language Specifics:[](language_specifics.md)
+
+Elements of Zebra(Including Examples): [](zebra.md)
+
+---
 
 # Language specifications
+
 1. Explcit Semicolon terminated lines.
 2. Explicit denotion of new Scope using Braces.
 3. Static typing against standard dynamic typing.
@@ -18,12 +28,13 @@
 `nil`: A datatype representing `None` type
 
 ---
+
 ## Operators
 
 ### Binary Arithematic Operators
 
-1.  `+` : Addition operator 
-    
+1.  `+` : Addition operator
+
     **Operands**: a (`Int|Float`), b (`Int|Float`)
 
     **Returns**: (`Float|Int`) - Sum of `Numbers` a and b
@@ -34,7 +45,7 @@
     $$(Float|Int)+Float \rightarrow Float$$
 
 2.  `-` : Subtraction operator
-    
+
     **Operands**: a (`Int|Float`), b (`Int|Float`)
 
     **Returns**: (`Float|Int`) - Difference of `Numbers` a and b
@@ -44,9 +55,8 @@
     $$Float-(Int|Float) \rightarrow Float$$
     $$(Float|Int)-Float \rightarrow Float$$
 
+3.  `*` : Multiplication operator
 
-3.  `*` : Multiplication operator  
-    
     **Operands**: a (`Int|Float`), b (`Int|Float`)
 
     **Returns**: (`Float|Int`) - Product of `Numbers` a and b
@@ -56,7 +66,7 @@
     $$Float\*(Int|Float) \rightarrow Float$$
     $$(Float|Int)\*Float \rightarrow Float$$
 
-4.  `/` : Division operator 
+4.  `/` : Division operator
 
     **Operands**: a (`Int|Float`), b (`Int|Float`), $b \neq 0$
 
@@ -64,9 +74,9 @@
 
     $$(Float|Int)/(Float|Int) \rightarrow Float$$
 
-    *Note:* The operator takes care of the Zero Division Error(**Runtime**) 
+    _Note:_ The operator takes care of the Zero Division Error(**Runtime**)
 
-5.  `//` : Integer Division operator 
+5.  `//` : Integer Division operator
 
     **Operands**: a (`Int|Float`), b (`Int|Float`), $b \neq 0 $
 
@@ -74,54 +84,55 @@
 
     $$(Float|Int)//(Float|Int) \rightarrow Int$$
 
-    *Note:* The operator takes care of the Zero Division Error(**Runtime**) 
+    _Note:_ The operator takes care of the Zero Division Error(**Runtime**)
 
-6.  `%` : Modulo operator 
+6.  `%` : Modulo operator
 
     **Operands**: a (`Int`), b (`Int`), $b \ne 0$
 
     **Returns**: (`Int`) - a MOD b($\ne0$)
 
     $$(Int)\%(Int) \rightarrow Int$$
-    *Note:* The operator takes care of the Zero Division Error(**Runtime**) 
-    
+    _Note:_ The operator takes care of the Zero Division Error(**Runtime**)
+
 7.  `^` : Exponentiation operator
-    
-    **Operands**: a (`Int|Float`), b(`Int|Float`)  
-    
-    **Returns**: (`Int|Float`) - $a^{b}$ 
-    
+
+    **Operands**: a (`Int|Float`), b(`Int|Float`)
+
+    **Returns**: (`Int|Float`) - $a^{b}$
+
     $$(Float|Int)^{(Float|Int)} \rightarrow (Float|Int)$$
 
 ### Binary Bitwise Operators
 
-8.  `<<` : Left shift operator 
+8.  `<<` : Left shift operator
 
     **Operands**: a (`Int`), b (`Int`), $b \in I ^ {+}$
 
     **Returns**: (`Int`) - a << b $(\in I ^ {+})$
 
     $$(Int)<<(Int) \rightarrow Int$$
-    *Note:* The operator takes care of the Negative left operand by raising exception.
+    _Note:_ The operator takes care of the Negative left operand by raising exception.
 
-9.  `>>` : Right shift operator 
+9.  `>>` : Right shift operator
 
     **Operands**: a (`Int`), b (`Int`), $b \in I ^ {+}$
 
     **Returns**: (`Int`) - a >> b $(\in I ^ {+})$
 
     $$(Int)>>(Int) \rightarrow Int$$
-    *Note:* The operator takes care of the Negative left operand by raising exception.
+    _Note:_ The operator takes care of the Negative left operand by raising exception.
 
-10.  `&` : Bitwise AND operator 
+10. `&` : Bitwise AND operator
 
     **Operands**: a (`Int`), b (`Int`)
 
     **Returns**: (`Int`) - a AND b
 
+
     $$(Int) \And (Int) \rightarrow Int$$
 
-11. `|` : Bitwise OR operator 
+11. `|` : Bitwise OR operator
 
     **Operands**: a (`Int`), b (`Int`)
 
@@ -131,9 +142,9 @@
 
 ### Binary Comparision Operators
 
-12. `<=` : Less than or equals operator 
+12. `<=` : Less than or equals operator
 
-    *Note:* Both the operands must be explicitly of the same type.
+    _Note:_ Both the operands must be explicitly of the same type.
 
     **Operands**: a (`Type`), b (`Type`)
 
@@ -141,9 +152,9 @@
 
     $$(Type) <= (Type) \rightarrow Bool$$
 
-13. `<` : Less than operator 
+13. `<` : Less than operator
 
-    *Note:* Both the operands must be explicitly of the same type.
+    _Note:_ Both the operands must be explicitly of the same type.
 
     **Operands**: a (`Type`), b (`Type`)
 
@@ -151,9 +162,9 @@
 
     $$(Type) < (Type) \rightarrow Bool$$
 
-14. `>` : Greater than operator 
+14. `>` : Greater than operator
 
-    *Note:* Both the operands must be explicitly of the same type.
+    _Note:_ Both the operands must be explicitly of the same type.
 
     **Operands**: a (`Type`), b (`Type`)
 
@@ -161,9 +172,9 @@
 
     $$(Type) > (Type) \rightarrow Bool$$
 
-15. `>=` : Greater than or equals operator 
+15. `>=` : Greater than or equals operator
 
-    *Note:* Both the operands must be explicitly of the same type.
+    _Note:_ Both the operands must be explicitly of the same type.
 
     **Operands**: a (`Type`), b (`Type`)
 
@@ -171,9 +182,9 @@
 
     $$(Type) >= (Type) \rightarrow Bool$$
 
-16. `==` : Equality operator 
+16. `==` : Equality operator
 
-    *Note:* Both the operands must be explicitly of the same type.
+    _Note:_ Both the operands must be explicitly of the same type.
 
     **Operands**: a (`Type`), b (`Type`)
 
@@ -181,9 +192,9 @@
 
     $$(Type) == (Type) \rightarrow Bool$$
 
-17. `!=` : not equals operator 
+17. `!=` : not equals operator
 
-    *Note:* Both the operands must be explicitly of the same type.
+    _Note:_ Both the operands must be explicitly of the same type.
 
     **Operands**: a (`Type`), b (`Type`)
 
@@ -193,19 +204,19 @@
 
 ### Binary Logical Operators
 
-18. `&&` : Logical AND operator 
+18. `&&` : Logical AND operator
 
     **Operands**: a (`Bool`), b (`Bool`)
 
-    **Returns**: (`Bool`) - `true` if both *a* and *b* are true
+    **Returns**: (`Bool`) - `true` if both _a_ and _b_ are true
 
     $$(Bool) \And\And (Bool) \rightarrow Bool$$
 
-19. `||` : Logical OR operator 
+19. `||` : Logical OR operator
 
     **Operands**: a (`Bool`), b (`Bool`)
 
-    **Returns**: (`Bool`) - `true` if either *a* or *b* is true
+    **Returns**: (`Bool`) - `true` if either _a_ or _b_ is true
 
     $$(Bool) || (Bool) \rightarrow Bool$$
 
@@ -226,14 +237,14 @@
 
     **Operands**: a (`Bool`)
 
-    **Returns**: (`Bool`) - NOT a 
+    **Returns**: (`Bool`) - NOT a
 
     $$(Bool) \rightarrow Bool$$
- 
+
 ### Assignment Operator
 
-22.  `=` : Assignment operator
-    
+22. `=` : Assignment operator
+
 **Operands**: x (`Variable`), a (`AST`)
 
 **Returns**: (`Float|Int|Bool|Str`) - returns the evaluated value of a
@@ -246,42 +257,41 @@ $$Variable=Bool  \rightarrow  Bool$$
 
 $$Variable=Str  \rightarrow  Str$$
 
-## Features 
+## Features
 
 1. **A print operation that prints values to screen(`PRINT()`)**
 
-   `PRINT()` is used to perform the operation of printing the values to the screen. 
-   
+   `PRINT()` is used to perform the operation of printing the values to the screen.
+
    The input to the print function is a list of AST's, we first evaluate the AST and print the value to the screen.
-   
+
    We could also specify the delimiter between the printing values using the keyword `end` , the default delimiter is `" "`.
-   
-   Suppose we want to put `comma` as the delimiter then we put, `end=", "` 
-   
- 
+
+   Suppose we want to put `comma` as the delimiter then we put, `end=", "`
+
 2. **Sequential implementation(`Seq()`)**
 
-   We provide the sequence of expressions which we want to execute, as a list. 
-   
+   We provide the sequence of expressions which we want to execute, as a list.
+
    Then evaluate each expression and return the value of the last evaluated expression.
-   
+
 3. **Truthy(`truthy()`)**
 
-   `truthy(arg)` checks its argument `arg` and classify whether it corresponds to `True` or `False` 
-   
-   The values that corresponds to False are: 
-   
+   `truthy(arg)` checks its argument `arg` and classify whether it corresponds to `True` or `False`
+
+   The values that corresponds to False are:
+
    `Int(0)`, `Float(0)`, `empty dictionary`, `empty string`, `nil`, `False`, `empty list`
-   
+
    Every value other than these correspond to `True`.
 
 ## Statically typed list
 
 List contains elements of only single specified type.  
 Can handle nested lists.  
-The list operations supported are: `list_append`, `list_remove`, `list_insert`, `Slice`, `list_len`    
+The list operations supported are: `list_append`, `list_remove`, `list_insert`, `Slice`, `list_len`
 
-language syntax:   
+language syntax:
 
 `list_append` : `append(element, list_name);`  
 `list_remove` : `remove(index, list_name);`  
@@ -292,18 +302,21 @@ language syntax:
 ## Operator Precedence
 
 The Operator Precedence from lowest to highest.
-|&nbsp;&nbsp;&nbsp;&nbsp;Name&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;Operators&nbsp;&nbsp;&nbsp;&nbsp;| &nbsp;&nbsp;&nbsp;&nbsp;Associates&nbsp;&nbsp;&nbsp;&nbsp; 
+|&nbsp;&nbsp;&nbsp;&nbsp;Name&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;Operators&nbsp;&nbsp;&nbsp;&nbsp;| &nbsp;&nbsp;&nbsp;&nbsp;Associates&nbsp;&nbsp;&nbsp;&nbsp;
 |------------|----------------|----
-|assignment    |&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;=|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Right
-|logicalOr    |&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;\|\||&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Left
-|logicalAnd    |&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;\&\&|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Left
-|Equality    |&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;==&nbsp;&nbsp;&nbsp;!= |&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Left
+|assignment |&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;=|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Right
+|logicalOr |&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;\|\||&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Left
+|logicalAnd |&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;\&\&|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Left
+|Equality |&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;==&nbsp;&nbsp;&nbsp;!= |&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Left
 |Comparison|&nbsp;&nbsp;>&nbsp;&nbsp;&nbsp;>=&nbsp;&nbsp;&nbsp;<&nbsp;&nbsp;&nbsp;<=|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Left
 |add|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;-&nbsp;&nbsp;&nbsp;+|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Left
-|mult|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;/&nbsp;&nbsp;&nbsp;*|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Left
+|mult|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;/&nbsp;&nbsp;&nbsp;\*|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Left
 |unary|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;~&nbsp;&nbsp;&nbsp;-|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Right
+
 ## CFG of the parser
+
 **The Context Free Grammar of our language:**
+
 $$
 \begin{align}
 ~program  &\rightarrow  (declaration)^*~~ EOF \\
@@ -337,8 +350,8 @@ atom  &\rightarrow  Identifier ~~ | Identifier ~~ '(' ~~ (expression) ~~ * ~~ ex
 \end{align}
 $$
 
-
 ## Scoping
+
 1. Referencing a variable in its initializer is not an error, but it resolves to variable in previous scope.
 
 ## Typechecking
@@ -351,27 +364,29 @@ $$
 3. As the while loop, if loop, PRINT are statements we returned 'nil'.
 4. The slice returns str.
 5. For checking the data type we are typechecking the value which is assigned to it. The variable datatype is Int if it is assigned Integer,
-    and it is Str if the variable is assigned String.
+   and it is Str if the variable is assigned String.
 
 To be done and Updates:
-1. refactor code    
+
+1. refactor code
 2. Comment code
-4. Complete the test files
-5. Implement the resolver pass
-6. Update the for loop for scopes
-7. Fixed the assignment typechecking bug
-8. PRINT test cases not fixed
-9. Adding a synchronize method to the parser class.
-10. Add Line number feature to the tokens
-11. Open an issue for << operator
-12. UNOP add exceptions
-13. Removed the boolean typechecking in IF 
-14. Removed the variable accessing errors in evaluation -> yet to add a resolver pass(but present in type checking)
-15. Replacing the var in Declare class to a identifier token(Helps in raising the error)
-16. Think of way to introduce tokens in Slice function
-17. sep and end features to add in parser of zout
-18. string_concat parser
-19. line numbers for errors
+3. Complete the test files
+4. Implement the resolver pass
+5. Update the for loop for scopes
+6. Fixed the assignment typechecking bug
+7. PRINT test cases not fixed
+8. Adding a synchronize method to the parser class.
+9. Add Line number feature to the tokens
+10. Open an issue for << operator
+11. UNOP add exceptions
+12. Removed the boolean typechecking in IF
+13. Removed the variable accessing errors in evaluation -> yet to add a resolver pass(but present in type checking)
+14. Replacing the var in Declare class to a identifier token(Helps in raising the error)
+15. Think of way to introduce tokens in Slice function
+16. sep and end features to add in parser of zout
+17. string_concat parser
+18. line numbers for errors
+
 # Errors
 
 We report the Error type, its message and its line number.
@@ -379,6 +394,7 @@ We report the Error type, its message and its line number.
 We also perform error recovery in case of parsing and lexing to catch as many errors as possible.
 
 ## During parsing
+
 We use panic mode error recovery for errors during parse errors.
 
 When we encounter an error inside parsing we report the error, set the `isError` flag to `True` and synchronize the parser to the next statement or the end of file.
@@ -388,4 +404,5 @@ This prevents cascading of errors and is fast enough.
 ## Runtime Errors
 
 We raise the Runtime errors and exit the program.
+
 > **_Note_**: Add tokens to BINOP, UNOP, Declare, Slice

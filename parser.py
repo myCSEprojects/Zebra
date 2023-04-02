@@ -21,7 +21,7 @@ dtypes_dict = {
     "int" : Int, 
     "float": Float, 
     "string": Str, 
-    "boolean": Bool
+    "boolean": Bool 
 }
 
 def get_AST_type(tk: Token):
@@ -68,7 +68,7 @@ class Parser:
         self.lexer.match(Operator(0,")"))
         if_block = self.parse_block()
         if(self.lexer.peek_token().val != "else"):
-            return If(c,if_block,None)
+            return If(lineNumber,c,if_block,nil())
         self.lexer.match(Keyword(0,"else"))
         if (self.lexer.peek_token().val == "if") :
             else_block = self.parse_if()
@@ -149,6 +149,13 @@ class Parser:
         self.lexer.match(Operator(0, ")"))
         self.lexer.match(Operator(0, ";"))
         return PRINT(lineNumber, pseq,sep_,end_)
+
+    def parse_return(self):
+        lineNumber = self.lexer.peek_token().lineNumber
+        self.lexer.match(Keyword(0, "return"))
+        r = self.parse_expr()
+        self.lexer.match(Operator(0, ";"))
+        return Return(lineNumber, r)
 
     def parse_append(self):
         lineNumber = self.lexer.peek_token().lineNumber
@@ -415,6 +422,8 @@ class Parser:
                 return self.parse_insert()
             case Operator(lineNumber,"{") :
                 return self.parse_block()
+            case Keyword(lineNumber, "return"):
+                return self.parse_return()
             case _:
                 return self.parse_expr_stmt()
     
@@ -711,7 +720,7 @@ def test_parse():
     # print(parse("append(2,a)"))
     # print(parse("func int add(int a,int b) { a+b;} add(2, 3);"))
     pp = pprint.PrettyPrinter(indent=4)
-    p = parse("int a = 8 << 1;")
+    p = parse("func int add(int a,int b) { return a+b;} add(2, 3);")
     pp.pprint(p)
     k = evaluate(p)
     print(k)

@@ -1,13 +1,13 @@
 int temp = 0;
 func int fib(int num){
     if (num == 2){
-        1;
+        return 1;
     }
     else{
         int x = fib(num-1);
         int new = x + temp;
         temp = x;
-        new;
+        return new;
     }
 }
 

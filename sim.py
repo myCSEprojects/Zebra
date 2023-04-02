@@ -3,6 +3,7 @@ from fractions import Fraction
 from typing import Union, Optional, List, Dict
 from lexer import Keyword, Operator, Identifier
 from error import RuntimeError, typeCheckError, resolveError
+import pprint
 
 def traverse_list(lst):
     '''
@@ -328,9 +329,13 @@ class DeclareFun(metadata):
 class FunCall(metadata):
     fn: 'AST'
     args: List['AST']
+
+@dataclass
+class Return(metadata):
+    value: 'AST'
     
 # Defining the AST
-AST = Variable|BinOp|Bool|Int|Float|Declare|If|UnOp|Str|Slice|nil|PRINT|Seq|For|DeclareFun|FunCall|zList|list_append|list_insert|list_len|list_remove|list_pop
+AST = Variable|BinOp|Bool|Int|Float|Declare|If|UnOp|Str|Slice|nil|PRINT|Seq|For|DeclareFun|FunCall|zList|list_append|list_insert|list_len|list_remove|list_pop|Return
 
 # Defining a Number as both an integer as  well as Float
 Number = Float|Int
@@ -553,6 +558,8 @@ def evaluate(program: AST, scopes: Scopes = None):
                         print(l, end=end.value)
                     else:
                         print(l, end=sep.value)
+                elif (isinstance(out,nil)):
+                    continue
                 else:
                     if (i==len(print_stmt)-1):
                         print(out.value, end=end.value)
@@ -564,7 +571,15 @@ def evaluate(program: AST, scopes: Scopes = None):
         case Seq(lines):
             ans = nil()
             for line in lines:
+                pp = pprint.PrettyPrinter(indent=4)
+                # pp.pprint(line)
                 ans = evaluate(line, scopes)
+                match ans:
+                    case Return(l,r):
+                        # print("checkpoint:0")
+                        break
+                    case _:
+                        continue
             return ans
 
         case While(lineNumber, condition,block) :
@@ -622,6 +637,7 @@ def evaluate(program: AST, scopes: Scopes = None):
 
         case FunCall(lineNumber, f, args): 
             fn = scopes.getVariable(f)
+            # print('fn',fn)
             argv = []
 
             for arg in args:
@@ -635,8 +651,21 @@ def evaluate(program: AST, scopes: Scopes = None):
             returnVal = evaluate(fn.body, scopes)
 
             scopes.endScope()
-
-            return returnVal
+            
+            match returnVal:
+                case Return(lineNumber, value):
+                    return_val = evaluate(value, scopes)
+                    if (isinstance(return_val, fn.return_type)):
+                        return return_val
+                    else:
+                        RuntimeError(f"Return type of function '{f.name}' not matched", lineNumber, 'typeError')
+                case _:
+                    return nil()
+            
+        
+        case Return(lineNumber, value):
+            r =  evaluate(value, scopes)
+            return Return(lineNumber,r)
     
         # Handling unknown expressions
         case _ as v:

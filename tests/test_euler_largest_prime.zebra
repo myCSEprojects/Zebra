@@ -10,7 +10,7 @@ func int largestPrimeFactor(int n){
             factor = factor + 1;
         }
     }
-    n;
+    return n;
 }
 
 int out = largestPrimeFactor(in);

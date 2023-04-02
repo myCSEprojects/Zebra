@@ -1,10 +1,10 @@
 ## Links:
 
-Getting Started: [](getting_started.md)
+Getting Started: [Getting Started](getting_started.md)
 
-Language Specifics:[](language_specifics.md)
+Language Specifics:[Language Specifics](language_specifics.md)
 
-Elements of Zebra(Including Examples): [](zebra.md)
+Elements of Zebra(Including Examples): [Elements of Zebra](zebra.md)
 
 ---
 

@@ -5,41 +5,51 @@ It is a new addition to the world of programming languages. This is a very frien
 
 # Language Features
 ## Comments 
-Comment lines using `@`.  
-`Example: @ Hello world` 
+Comment lines using `@`.   
+Example: 
+`@ Hello world` 
 
-## Identifiers 
+## Keywords
 `if, else, while, for, zout, array, append, remove, length, insert, func, slice, index, end, sep, pop`.   
 These are the keywords in the language and are not supposed to be used as identifiers. Otherthan these anything can be used as an identifier.
 
 ## Semicolons 
 Use semicolons to indicate the end of an expression.  
-`Example: int a = 5;`  
+Example:
+`int a = 5;`  
 ## DataTypes 
 ### Integer 
 `int` is used to define objects of type integer.  
-`Example: int a = 5;` 
+Example: 
+`int a = 5;` 
 ### Float 
-`float` is used to define objects of type float.   
-`Example: float a = 1.5;` 
+`float` is used to define objects of type float.  
+Example:
+`float a = 1.5;` 
 ### String 
 `string` is used to define objects of type string.   
-`Example: string a = "zebra";` 
+Example:
+`string a = "zebra";` 
 ### Boolean 
 `boolean` is used to define objects of type bool.   
-`Example: bool a = "true";`   
+Example: 
+`bool a = "true";`   
 Right side of the assignment can contain any valid datatype, the language evaluate it to `True` or `False` based on its value.   
 Integer 0, Float 0, Empty string, and nil are evaluate to `False`, and rest others are evaluated to `True`.
 
 ### Constant
 `const` is used to define objects of constant type, that is, once defined they cannot be modified.  
-`Example: const int a = 10;` 
+Example: 
+`const int a = 10;` 
 
 ### Array
 `array` is used to define a container that contains values of only specified type.  
-`Syntax: "array" datatype identifier = [datatype object, datatype object,....]`
+Syntax:   
+```
+"array" datatype identifier = [datatype object, datatype object,....]
 ```
 Example: 
+```
 array int a = [10,5,6];
 array string b = ["Hi","Hello","Namasthe"];
 ```
@@ -88,8 +98,8 @@ while(i < 10){
 ``` 
 ## Functions
 Functions in zebra are defined as:  
-```
 Syntax: 
+```
 "func" returnDatatype identifier(dataType identifier, dataType identifier,....)
 {
     -------------
@@ -104,9 +114,9 @@ func int fib(int num){
     return x;
 }
 ```
-Functions are called as:
-```
+Functions are called as:  
 Syntax:
+```
 returnDataType identifier = identifier(parameter);
 ```
 ```
@@ -114,13 +124,13 @@ int z = fib(142);
 ```
 ## Array operations
 ### Append
-`append` is used to append an element at the last of the array. 
-```
+`append` is used to append an element at the last of the array.   
 Syntax:
+```
 append(element,identifier)
 ```
-```
 Example: 
+```
 array int a = [10,5,6];
 append(2,a);
 
@@ -129,12 +139,12 @@ result:
 ```
 ### Pop
 `pop` is used to pop an element from the end of the array if the array is not empty.  
-```
 Syntax:
+```
 pop(identifier)
 ```
-```
 Example: 
+```
 array int a = [10,5,6];
 pop(a);
 
@@ -144,12 +154,12 @@ Pops out 6 from the end.
 ```
 ### Remove
 `remove` is used to remove an element at the specified index.  
-```
 Syntax:
+```
 remove(index,identifier)
 ```
-```
 Example: 
+```
 array int a = [10,5,6];
 remove(1,a);
 
@@ -159,12 +169,12 @@ Removes an element from the array `a` at index 1
 ```
 ### Insert
 `insert` is used to insert an element at the specified index.  
-```
 Syntax:
+```
 insert(index,element,identifier)
 ```
-```
 Example: 
+```
 array int a = [10,5,6];
 insert(1,100,a);
 
@@ -174,12 +184,12 @@ Inserts the element 100 element into the array `a` at index 1
 ```
 ### Length
 `length` is used to find the size of the array.  
-```
 Syntax:
+```
 length(identifier)
 ```
-```
 Example: 
+```
 array int a = [10,5,6];
 length(a);
 
@@ -189,12 +199,12 @@ Gives the length of the array `a`.
 ```
 ### Slice
 `slice` is used to get the elements of a array within a specified range.  
-```
 Syntax:
+```
 slice identifier start:end
 ```
-```
 Example: 
+```
 array int a = [10,5,6];
 zout(slice a 0:2);
 
@@ -204,12 +214,12 @@ Returns the elements between index 0(inclusive) and 2(exclusive) of the array `a
 ```
 ### Index
 `index` is used to get the element of a array with a specified index.  
-```
 Syntax:
+```
 index identifier index_number
 ```
-```
-Example: 
+Example:
+``` 
 array int a = [10,5,6];
 zout(index a 1);
 
@@ -219,8 +229,8 @@ Returns the element at index 1 of `a`.
 ```
 ### sarray
 `sarray` is used to assign a slice of a array to a new variable 
-```
-Example: 
+Example:
+``` 
 array int a = [10,5,6];
 sarray b=slice a 0:2;
 zout(b);
@@ -231,8 +241,8 @@ Returns the elements between index 0(inclusive) and 2(exclusive) of the array `a
 ```
 ### carray
 `carray` is used to assign a concatenated array to a new variable
-```
 Example: 
+```
 array int a = [10,5,6];
 array int b = [101,51,61];
 carray c=a+b;
@@ -243,26 +253,45 @@ result:
 Returns the concatenated elements from the arrays `a` and `b`.
 ```
 ## Errors
-The possible errors could be: `TokenError, typeCheckError, RuntimeError`  
-`typeCheckError`: Arises when operations are performed on objects of conflicting types.  
-```
+The possible errors are: `TokenError, typeCheckError, RuntimeError, ParseError, resolveError`  
+### typeCheckError: 
+Arises when operations are performed on objects of conflicting types.  
 Examples: 
+```
 int a=5; 
 string b="Hi";
 int c=a+b;
 ```
-`RuntimeError`: Arises when the program crashes or produces a wrong output. 
-```
+### RuntimeError: 
+Arises when the program crashes or produces a wrong output.   
 Examples: 
+```
 array index out of bounds
 cannot divide with zero
 ```
-`TokenError`: Arises when an expected token isn't provided. 
-```
+### TokenError: 
+Arises when an expected token isn't provided.   
 Example: 
+```
 int a=10 
 raises a token error "Expected a ';'"
 ```
-
+### ParseError: 
+Arises when the declaration or syntax is not consistent with the language specifications.   
+Examples: 
+```
+Expected an identifier
+Cannot use Keywords as Identifiers
+Cannot declare a array as const.
+Expected data type.
+Dimensions of the given array and initializer array do not match
+```
+### resolveError: 
+Arises when the redeclarations occur and when the variables could not be resolved.  
+Examples: 
+```
+Redeclaring already declared variable x
+Could not resolve the variable x
+```
 
 

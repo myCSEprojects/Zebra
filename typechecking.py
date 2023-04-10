@@ -109,7 +109,7 @@ def typecheck(program: AST, scopes = None):
                 typeCheckError(f"Binary Operator {operator} not reconized", lineNumber)              
 
             # Raising type error in case left or the right side donot evaluate to a type
-            if (operator != '=' and (((not isinstance(firstOperandType, type)) and isinstance(firstOperandType, InstanceObject)) or ((not isinstance(secondOperandType, type)) and isinstance(secondOperandType, InstanceObject)))):
+            if (operator != '=' and (((not isinstance(firstOperandType, type)) and isinstance(firstOperandType, instanceType)) or ((not isinstance(secondOperandType, type)) and isinstance(secondOperandType, instanceType)))):
                 typeCheckError(f"Operator {operator} not defined between {firstOperandType} and {secondOperandType}", lineNumber)
 
             if (operator != '='):

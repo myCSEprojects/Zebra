@@ -1,0 +1,6 @@
+func int add(int a,int b){
+    return a+b;
+}
+
+int c = add(1,2);
+zout(c);

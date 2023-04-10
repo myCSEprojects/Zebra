@@ -1,0 +1,5 @@
+
+@ Testing invalid returns
+func int test(){
+    return false;
+}

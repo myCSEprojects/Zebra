@@ -3,6 +3,7 @@ from fractions import Fraction
 from typing import Union, Optional, List, Dict
 from lexer import Keyword, Operator, Identifier
 from error import RuntimeError, typeCheckError, resolveError
+import pprint
 
 def traverse_list(lst):
     '''
@@ -23,6 +24,16 @@ class metadata:
     Class to store the meta data of the AST
     '''
     lineNumber: int
+
+@dataclass
+class instanceType:
+    '''
+    Class to store the type of the instance
+    '''
+    name: "ClassObject"
+    def __repr__(self):
+        return f"InstanceType{self.name}"
+
 @dataclass(frozen=True)
 class Variable():
     '''
@@ -39,12 +50,16 @@ class Variable():
 @dataclass
 class nil():
     pass
+
 @dataclass
 class Int():
    '''
    Class representing the integers in the language
    '''
    value: int
+
+   def __repr__ (self):
+       return f"{self.value}"
 
 @dataclass
 class Float():
@@ -54,6 +69,8 @@ class Float():
     value: Fraction
     def __init__(self, value):
         self.value = Fraction(value)
+    def __repr__ (self):
+       return f"{self.value}"
 
 @dataclass
 class Bool():
@@ -67,10 +84,15 @@ class Bool():
             return Bool(False)
         else:
             return Bool(True)
+    def __repr__ (self):
+       return f"{self.value}"
 
 @dataclass
 class Str() :
     value: str
+
+    def __repr__ (self):
+       return f"{self.value}"
 
 # Defined binary operators in the Language
 BINARY_OPERATORS = [
@@ -93,11 +115,28 @@ class zList():
 
 @dataclass
 class FnObject:
+    function_type: str
     params_types: List[type]
     params: List[Variable]
     body: 'AST'
     return_type: type
 
+@dataclass
+class ClassObject:
+    name: str
+    methods: Dict[str, "Declare"]
+    thisID: int
+
+    def __repr__(self):
+        return f"Class<{self.name}>"
+    
+@dataclass
+class InstanceObject:
+    zClass: ClassObject
+    fields: Dict[str, List[Union["AST", type, bool]]]
+    
+    def __repr__(self):
+        return f"Instance<{self.zClass.name}>"
 
 @dataclass
 class Scopes:
@@ -129,11 +168,13 @@ class Scopes:
         '''
         assert(len(self.stack) != 0)
         # Avoiding redeclaration in the same scope
+        if ((not isinstance(dtype, type)) and isinstance(dtype, instanceType)):
+            if (value != nil() and (isinstance(value, InstanceObject) and dtype.name.name != value.zClass.name)):
+                typeCheckError(f"Cannot initialize a {dtype.name} instance with instance of type {value.zClass.name}.", var.lineNumber)
         # Implicit type conversion from float to int and int to float
-        if (issubclass(dtype, Int)):
+        elif (issubclass(dtype, Int)):
             if (isinstance(value, Float)):
                 value = Int(int(value.value))
-        
         elif (issubclass(dtype, Float)):
             if (isinstance(value, Int)):
                 value = Float(float(value.value) if value.value != None else 0.0)
@@ -150,10 +191,14 @@ class Scopes:
         id = var.id
         name = var.name
         lineNumber = var.lineNumber
-
         for i in range(len(self.stack)-1, -1, -1):
             for var in self.stack[i]:
                 if var.id == id:
+                    if (not isinstance(self.stack[i][var][1], type) and isinstance(self.stack[i][var][1], instanceType)):
+                        if (value != nil() and ((not isinstance(value, InstanceObject)) or (isinstance(value, InstanceObject) and self.stack[i][var][1].name.name != value.zClass.name))):
+                            typeCheckError(f"Cannot assign a {self.stack[i][var][1].name} instance with instance of type {value}.", lineNumber)
+                        self.stack[i][var][0] = value
+                        return
                     # Truthify if lvalue is of type Bool
                     if (issubclass(self.stack[i][var][1], Bool)):
                         value = Bool.truthy(value)
@@ -204,6 +249,45 @@ class Scopes:
             for v in self.stack[i]:
                 if v.id == var.id:
                     return self.stack[i][v][2]
+    
+    def __repr__(self):
+        s = ""
+        for i in range(len(self.stack)-1, -1, -1):
+            s += (f"Scope {i}:\n")
+            for v in self.stack[i]:
+                s += (f"{v.name} : {self.stack[i][v][0]}\n")
+            s += '\n'
+        return s 
+
+@dataclass 
+class DeclareClass(metadata):
+    var : Variable
+    stmts : List['DeclareFun']
+    thisID : int
+
+@dataclass
+class Get(metadata):
+    '''
+    Get class to get the field of a given object
+    '''
+    var: Variable
+    field: str
+
+@dataclass
+class Set(metadata):
+    '''
+    Set class to set the field of a given object
+    '''
+    var: Variable
+    field: str
+    value: 'AST'
+
+@dataclass
+class This(metadata):
+    '''
+    This class to get the current instance
+    '''
+    id: int
 
 @dataclass
 class list_pop(metadata):
@@ -323,14 +407,19 @@ class DeclareFun(metadata):
     params_type : List[type]
     params: List[Variable]
     body: 'AST'
+    functionType: str
 
 @dataclass
 class FunCall(metadata):
     fn: 'AST'
     args: List['AST']
+
+@dataclass
+class Return(metadata):
+    value: 'AST'
     
 # Defining the AST
-AST = Variable|BinOp|Bool|Int|Float|Declare|If|UnOp|Str|Slice|nil|PRINT|Seq|For|DeclareFun|FunCall|zList|list_append|list_insert|list_len|list_remove|list_pop
+AST = Variable|BinOp|Bool|Int|Float|Declare|If|UnOp|Str|Slice|nil|PRINT|Seq|For|DeclareFun|FunCall|zList|list_append|list_insert|list_len|list_remove|list_pop|Return|FnObject|ClassObject|InstanceObject|DeclareClass|Get|Set|This|Block
 
 # Defining a Number as both an integer as  well as Float
 Number = Float|Int
@@ -363,6 +452,12 @@ def evaluate(program: AST, scopes: Scopes = None):
         case nil():
             return program
         
+        case InstanceObject() as obj:
+            return obj
+        
+        case This(lineNumber, id):
+            return scopes.getVariable(Variable(lineNumber, "this", id ))
+        
         case zList(dtype, value):
             return program
 
@@ -377,7 +472,7 @@ def evaluate(program: AST, scopes: Scopes = None):
 
             return returnVal
 
-        case BinOp(lineNumber, operator, firstOperand, secondOperand):
+        case BinOp(lineNumber, operator, firstOperand, secondOperand) as b:
             
             secondOperand = evaluate(secondOperand, scopes)
             
@@ -501,7 +596,7 @@ def evaluate(program: AST, scopes: Scopes = None):
                     evaluated_operand = Bool.truthy(operand.value)
                     return Bool(not evaluated_operand.value)
         
-        case Declare(lineNumber, var, value, dtype, isConst):
+        case Declare(lineNumber, var, value, dtype, isConst) as d:
             # Evaluating the expression before declaration
             if (dtype == zList):
                 if (value != nil()):
@@ -553,18 +648,28 @@ def evaluate(program: AST, scopes: Scopes = None):
                         print(l, end=end.value)
                     else:
                         print(l, end=sep.value)
+                elif (isinstance(out,nil)):
+                    continue
                 else:
                     if (i==len(print_stmt)-1):
-                        print(out.value, end=end.value)
+                        print(out, end=end.value)
                     else:
-                        print(out.value, end=sep.value)
+                        print(out, end=sep.value)
             
             return nil()
 
         case Seq(lines):
             ans = nil()
             for line in lines:
+                pp = pprint.PrettyPrinter(indent=4)
+                # pp.pprint(line)
                 ans = evaluate(line, scopes)
+                match ans:
+                    case Return(l,r):
+                        # print("checkpoint:0")
+                        break
+                    case _:
+                        continue
             return ans
 
         case While(lineNumber, condition,block) :
@@ -616,27 +721,99 @@ def evaluate(program: AST, scopes: Scopes = None):
             l.elements.insert(index.value, element)
             return nil()
 
-        case DeclareFun(lineNumber, f, return_type, params_type, params, body):
-            scopes.declareFun(f, FnObject(params_type, params, body, return_type))
+        case DeclareFun(lineNumber, f, return_type, params_type, params, body, function_type):
+            scopes.declareFun(f, FnObject(function_type, params_type, params, body, return_type))
             return nil()
-
-        case FunCall(lineNumber, f, args): 
-            fn = scopes.getVariable(f)
-            argv = []
-
-            for arg in args:
-                argv.append(evaluate(arg, scopes))
-
-            scopes.beginScope()
-
-            for i in range(len(fn.params)):
-                scopes.declareVariable(fn.params[i],argv[i],fn.params_types[i],False)
         
-            returnVal = evaluate(fn.body, scopes)
+        case Get(lineNumber, var, name) as g:
+            obj = evaluate(var, scopes)
+            if (isinstance(obj, InstanceObject)):
+                field = nil()
+                if name in obj.fields:
+                    field = obj.fields[name][0]
+                elif name in obj.zClass.methods:
+                    field = obj.zClass.methods[name]
+                else:
+                    RuntimeError(f"Instance of class {obj.zClass.name} has no attribute {name}", lineNumber, "attributeError")
+                if (isinstance(field, DeclareFun)):
+                    # Begining scopes for the this variable
+                    scopes.beginScope()
 
-            scopes.endScope()
+                    # Declaring the this variable
+                    scopes.declareVariable(Variable(lineNumber, "this", obj.zClass.thisID), obj, instanceType(obj.zClass), False)
 
-            return returnVal
+                    # Declaring the function
+                    evaluate(field, scopes)
+                    return scopes.getVariable(field.var)
+                return field
+            
+        case Set(lineNumber, var, name, value):
+            obj = evaluate(var, scopes)
+            value = evaluate(value, scopes)
+            if (isinstance(obj, InstanceObject)):
+                if name in obj.fields:
+                    obj.fields[name][0] = value
+                else:
+                    RuntimeError(f"Instance of class {obj.zClass.name} has no attribute {name}", lineNumber, "attributeError")         
+
+        case DeclareClass(lineNumber, var, stmts, thisID):
+            classObj = ClassObject(var.name, stmts, thisID)
+            scopes.declareVariable(var, classObj, ClassObject, False)
+            
+        case FunCall(lineNumber, f, args): 
+            fn = evaluate(f, scopes)
+            
+            # Checking if it is a class instantiation
+            if (isinstance(fn, ClassObject)):
+                # Collecting all the instance fields
+                instanceFields = {}
+                for stmt in fn.methods:
+                    stmt = fn.methods[stmt]
+                    if isinstance(stmt, Declare):
+                        instanceFields[stmt.var.name] = [evaluate(stmt.value), stmt.dtype, stmt.isConst]
+                
+                # Creating the instance object from the class object
+                obj = InstanceObject(fn, instanceFields)
+
+                # Calling the initialization method(if present)
+                if "init" in fn.methods:
+                    evaluate(FunCall(lineNumber, Get(lineNumber, obj, "init"), args), scopes)
+                
+                # overriding the return from the init function
+                return obj
+            
+            else:
+                argv = []
+
+                for arg in args:
+                    argv.append(evaluate(arg, scopes))
+
+                scopes.beginScope()
+
+                for i in range(len(fn.params)):
+                    scopes.declareVariable(fn.params[i],argv[i],fn.params_types[i],False)
+            
+                returnVal = evaluate(fn.body, scopes)
+                
+                scopes.endScope()
+
+                if (fn.function_type == 'METHOD'):
+                    scopes.endScope()
+                
+                match returnVal:
+                    case Return(lineNumber, value):
+                        return_val = evaluate(value, scopes)
+                        if (isinstance(return_val, fn.return_type)):
+                            return return_val
+                        else:
+                            RuntimeError(f"Return type of function '{f.name}' not matched", lineNumber, 'typeError')
+                    case _:
+                        return nil()
+            
+        
+        case Return(lineNumber, value):
+            r =  evaluate(value, scopes)
+            return Return(lineNumber,r)
     
         # Handling unknown expressions
         case _ as v:

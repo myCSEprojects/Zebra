@@ -226,31 +226,54 @@ zout(index a 1);
 result:
 5
 Returns the element at index 1 of `a`.
-```
-### sarray
-`sarray` is used to assign a slice of a array to a new variable 
-Example:
-``` 
-array int a = [10,5,6];
-sarray b=slice a 0:2;
-zout(b);
+```  
+## Classes 
 
-result:
-[10,5]
-Returns the elements between index 0(inclusive) and 2(exclusive) of the array `a`.
+### Feature Update
+1. Added a feature to create classes (without support for inheritance and static methods).
 ```
-### carray
-`carray` is used to assign a concatenated array to a new variable
+class className{
+    Variable declarations + Function declarations
+}
+```
+
 Example: 
-```
-array int a = [10,5,6];
-array int b = [101,51,61];
-carray c=a+b;
-zout(c);
 
-result:
-[10,5,6,101,51,61]
-Returns the concatenated elements from the arrays `a` and `b`.
+```
+class ll{
+    int value;
+    ll next;
+
+    func boolean init(int value){
+        this.value = value;
+        return true;
+    }
+}
+```
+
+2. Ability to create instances of classes.
+```
+className varName = className(params);
+```
+> *Note:* The process of instantiation automatically calls the function named `"init"`(if present). Whatever the function might return, it discards it and returns an object instance. But when called explicitly like `instanceObject.init(params)`, its return value would be as expected.
+
+3.Setters:
+```
+instanceName.fieldName = fieldValue;
+```
+> *Note:* We can only Declare a field of an instance inside the class, but we can only modify its value outside the class. We can not modify a function declaration of the scope outside of the class.
+4. Getters:
+```
+@ Getting a field  
+instanceName.fieldName;  
+@ Getting a method  
+instanceName.methodName();
+```
+> *Note:* Assigning an instance variable to a variable does not create a copy, but the variable points to the value of the variable. 
+> Example:
+```
+className a = className(params);
+className b = a; @ Here b points to the same value pointed by a   
 ```
 ## Errors
 The possible errors are: `TokenError, typeCheckError, RuntimeError, ParseError, resolveError`  

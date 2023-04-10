@@ -1,0 +1,102 @@
+@ Class Declaration
+class test{
+    func int a(){
+        return 1;
+    }
+}
+zout(test); @ Should Print Class<test>
+
+@ instantiating without initialization
+test b;
+
+@ instantiating with initialization
+test a = test();
+
+zout(a); @ Should print Instance<test>
+
+zout(a.a());
+
+class testRec{
+    int someValue;
+    func int fact(int n){
+        if (n <= 1){
+            return 1;
+        }
+        else{
+            return n * this.fact(n-1);
+        }
+    }
+
+    func boolean fn(int n){
+        this.someValue = n;
+        return true;
+    }
+
+    func int getSomeValue(){
+        return this.someValue;
+    }
+}
+
+@ This should give error
+@ test x  = testRec();
+
+testRec f = testRec();
+
+zout(f.fact(5));
+
+@ this should give error
+@ zout(this.fact(5));
+
+f.fn(2);
+
+zout(f.getSomeValue()); @ 2
+
+@ Checking independence of objects
+testRec g = testRec();
+g.fn(5);
+
+zout(g.getSomeValue()); @ 5
+
+@ Checking the initialization
+
+class testInit{
+    int value;
+    func boolean init(int n){
+        this.value = n;
+        return true;
+    }
+
+    func int getValue(){
+        return this.value;
+    }
+}
+
+testInit o = testInit(1);
+@ Testing the ability to set values
+o.value = 10;
+zout(o.getValue()); @ Should print 10 (not 1)
+
+@ Using same class object in the same class
+class ll{
+    int value;
+    ll next;
+
+    func boolean init(int value){
+        this.value = value;
+        return true;
+    }
+}
+ll head = ll(1);
+ll node = head;
+for(int i=2; i < 10; i = i + 1){
+    node.next = ll(i);
+    node = node.next;
+}
+
+node = head;
+
+for(int i = 1; i < 10; i = i + 1){
+    zout(node.value);
+    node = node.next;
+}
+

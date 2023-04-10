@@ -69,9 +69,9 @@ Integer | Boolean | Keyword | Identifier | Operator | Flt
 class EndOfTokens(Exception):
     pass
 
-keywords = "if else while for zout list append remove length insert func slice index end sep pop return".split()
+keywords = "if else while for zout list append remove length insert func slice index end sep pop return class this".split()
 dtypes = "int float string boolean const list".split()
-symbolic_operators = "+ - * / < > ! = ; { } ( ) [ ] , ~ % & | ~ ^ :".split()
+symbolic_operators = "+ - * / < > ! = ; { } ( ) [ ] , ~ % & | ~ ^ : .".split()
 str_denote = ["'",'"']
 whitespace = " \t\n"
 line_cmt = "@"
@@ -83,14 +83,14 @@ def word_to_token(lineNumber, word):
     if word == "true":
         return Boolean(lineNumber, True)
     if word == "false":
-        return Boolean(False)
+        return Boolean(lineNumber, False)
     return Identifier(lineNumber,word)
 
 @dataclass
 class Lexer:
     stream: Stream
     save: Token = None
-    lineNumber = 0
+    lineNumber = 1
     
     def synchronize(self):
         '''

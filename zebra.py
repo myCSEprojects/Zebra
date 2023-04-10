@@ -47,7 +47,7 @@ def execute(stream:str, resolverScopes: ResolverScopes, typecheckerScopes: Scope
         output = evaluate(resolvedProgram, scopes)
         return output
     
-    except (RuntimeException, TypeCheckException, ParseException, ResolveException) as e:
+    except (RuntimeException, TypeCheckException, ParseException, ResolveException, RecursionError) as e:
         isError = True
         return nil()
     

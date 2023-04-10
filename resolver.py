@@ -6,6 +6,7 @@ class ResolverScopes:
     Scopes storing the stack of environments
     '''
     stack: List[Dict[Variable, "AST"]]
+
     def __init__(self, stack: List[Dict[Variable, "AST"]] = None):
         if (stack == None):
             self.stack = [dict()]
@@ -60,6 +61,7 @@ def resolve(program: AST, scopes : ResolverScopes = None):
         scopes = ResolverScopes()
     
     match program:
+
         case Int() | Float() | Bool() | Str() | nil() | zList() as literal:
             return literal
         
@@ -75,11 +77,27 @@ def resolve(program: AST, scopes : ResolverScopes = None):
             resolvedValue = resolve(value, scopes)
             # Declaring the variable
             scopes.declareVariable(var.name, var)
+            # Resolving the data type
+            if ((not isinstance(dtype, type)) and isinstance(dtype, instanceType)):
+                dtype = instanceType(scopes.getVariable(dtype.name.name, lineNumber))
             return Declare(lineNumber, var, resolvedValue, dtype, isConst)
         
-        case DeclareFun(lineNumber, var, return_type, params_type, params, body):
+        case DeclareClass(lineNumber, var, stmts, thisID):
+            # Declaring the class
+            scopes.declareVariable(var.name, var)
+            # Resolving the statements
+            scopes.beginScope()
+            # Declaring the this variable
+            scopes.declareVariable("this", Variable(lineNumber, "this", thisID))
+            for methodName in stmts:
+                
+                stmts[methodName] = resolve(stmts[methodName], scopes)
+            scopes.endScope()
+            return DeclareClass(lineNumber, var, stmts, thisID)
+
+        case DeclareFun(lineNumber, var, return_type, params_type, params, body, function_type):
             # Declaring the function
-            scopes.declareFun(var.name, var, FnObject(return_type, params_type, params, body))
+            scopes.declareFun(var.name, var, FnObject(function_type, return_type, params_type, params, body))
             scopes.beginScope()
             # Declaring the parameters
             for param in params:
@@ -87,8 +105,16 @@ def resolve(program: AST, scopes : ResolverScopes = None):
             # Resolving the body
             resolvedBody = resolve(body, scopes)
             scopes.endScope()
-            # Resolving the body
-            return DeclareFun(lineNumber, var, return_type, params_type, params, resolvedBody)
+            return DeclareFun(lineNumber, var, return_type, params_type, params, resolvedBody, function_type)
+        
+        case Get(lineNumber, var, name):
+            resolvedVar = resolve(var, scopes)
+            return Get(lineNumber, resolvedVar, name)
+        
+        case Set(lineNumber, var, name, value):
+            resolvedVar = resolve(var, scopes)
+            resolvedValue = resolve(value, scopes)
+            return Set(lineNumber, resolvedVar, name, resolvedValue)
         
         case FunCall(lineNumber, var, args):
             # Resolving the function variable
@@ -130,6 +156,11 @@ def resolve(program: AST, scopes : ResolverScopes = None):
             resolvedLines = [resolve(line, scopes) for line in lines]
             return Seq(resolvedLines)
         
+        case This(lineNumber, id):
+            referencingVariable = scopes.getVariable("this", lineNumber)
+            resolvedThis = This(lineNumber, referencingVariable.id)
+            return resolvedThis
+
         case PRINT(lineNumber, print_stmts, sep,end):
             # Resolving the print statement
             resolvedPrintStmt = [resolve(print_stmt, scopes) for print_stmt in print_stmts]
@@ -200,3 +231,4 @@ def resolve(program: AST, scopes : ResolverScopes = None):
             # Resolving the variable
             resolvedVar = resolve(var, scopes)
             return list_pop(lineNumber, resolvedVar)
+        

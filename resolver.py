@@ -62,7 +62,7 @@ def resolve(program: AST, scopes : ResolverScopes = None):
     
     match program:
 
-        case Int() | Float() | Bool() | Str() | nil() | zList() as literal:
+        case Int() | Float() | Bool() | Str() | nil() | zArray() as literal:
             return literal
         
         case Variable(lineNumber, name, id) as v:
@@ -199,36 +199,36 @@ def resolve(program: AST, scopes : ResolverScopes = None):
             resolvedSecond = resolve(second, scopes)
             return Slice(lineNumber, resolvedValue, resolvedFirst, resolvedSecond)
         
-        case list_append(lineNumber, element, var):
+        case array_append(lineNumber, element, var):
             # Resolving the element
             resolvedElement = resolve(element, scopes)
             # Resolving the variable
             resolvedVar = resolve(var, scopes)
-            return list_append(lineNumber, resolvedElement, resolvedVar)
+            return array_append(lineNumber, resolvedElement, resolvedVar)
         
-        case list_remove(lineNumber, index , var):
+        case array_remove(lineNumber, index , var):
             # Resolving the index
             resolvedIndex = resolve(index, scopes)
             # Resolving the variable
             resolvedVar = resolve(var, scopes)
-            return list_remove(lineNumber, resolvedIndex, resolvedVar)
+            return array_remove(lineNumber, resolvedIndex, resolvedVar)
         
-        case list_len(lineNumber, var):
+        case array_len(lineNumber, var):
             # Resolving the variable
             resolvedVar = resolve(var, scopes)
-            return list_len(lineNumber, resolvedVar)
+            return array_len(lineNumber, resolvedVar)
         
-        case list_insert(lineNumber, index, element, var):
+        case array_insert(lineNumber, index, element, var):
             # Resolving the index
             resolvedIndex = resolve(index, scopes)
             # Resolving the element
             resolvedElement = resolve(element, scopes)
             # Resolving the variable
             resolvedVar = resolve(var, scopes)
-            return list_insert(lineNumber, resolvedIndex, resolvedElement, resolvedVar)
+            return array_insert(lineNumber, resolvedIndex, resolvedElement, resolvedVar)
         
-        case list_pop(lineNumber, var):
+        case array_pop(lineNumber, var):
             # Resolving the variable
             resolvedVar = resolve(var, scopes)
-            return list_pop(lineNumber, resolvedVar)
+            return array_pop(lineNumber, resolvedVar)
         

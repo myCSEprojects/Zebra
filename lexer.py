@@ -69,8 +69,8 @@ Integer | Boolean | Keyword | Identifier | Operator | Flt
 class EndOfTokens(Exception):
     pass
 
-keywords = "if else while for zout list append remove length insert func slice index end sep pop return class this".split()
-dtypes = "int float string boolean const list".split()
+keywords = "if else while for zout array append remove length insert func slice index end sep pop return class this".split()
+dtypes = "int float string boolean const array".split()
 symbolic_operators = "+ - * / < > ! = ; { } ( ) [ ] , ~ % & | ~ ^ : .".split()
 str_denote = ["'",'"']
 whitespace = " \t\n"

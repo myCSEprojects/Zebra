@@ -1,4 +1,4 @@
-testcase 1 for lists
+testcase 1 for arrays
 3
 4
 3
@@ -12,7 +12,8 @@ testcase 1 for lists
 [1]
 []
 [1, 2, 3, 4, 5, 6]
-testcase 2 for nested lists
+[[1], [2], [3]]
+testcase 2 for nested arrays
 3
 4
 3

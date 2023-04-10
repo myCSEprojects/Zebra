@@ -5,15 +5,15 @@ from lexer import Keyword, Operator, Identifier
 from error import RuntimeError, typeCheckError, resolveError
 import pprint
 
-def traverse_list(lst):
+def traverse_array(lst):
     '''
     Utility for printing lists
     '''
     print_lst = []
     for ele in lst.elements:
-        if isinstance(ele, zList):
-            list_ele = traverse_list(ele)
-            print_lst.append(list_ele)
+        if isinstance(ele, zArray):
+            array_ele = traverse_array(ele)
+            print_lst.append(array_ele)
         else:
             print_lst.append(ele.value)
     return print_lst
@@ -109,7 +109,7 @@ UNARY_OPERATORS = [
 ]
 
 @dataclass
-class zList():
+class zArray():
     dtype : type
     elements : list
 
@@ -290,8 +290,8 @@ class This(metadata):
     id: int
 
 @dataclass
-class list_pop(metadata):
-    list_name : 'AST'
+class array_pop(metadata):
+    array_name : 'AST'
 
 @dataclass
 class Slice(metadata):
@@ -300,24 +300,24 @@ class Slice(metadata):
     second : Int 
 
 @dataclass
-class list_append(metadata):
+class array_append(metadata):
     element : 'AST'
-    list_name : Identifier
+    array_name : Identifier
 
 @dataclass
-class list_remove(metadata):
+class array_remove(metadata):
     index : Int
-    list_name : Identifier
+    array_name : Identifier
 
 @dataclass 
-class list_len(metadata):
-    list_name : 'AST'
+class array_len(metadata):
+    array_name : 'AST'
 
 @dataclass 
-class list_insert(metadata):
+class array_insert(metadata):
     index : Int
     element : 'AST'
-    list_name : Identifier
+    array_name : Identifier
 
 # Basic Operations
 @dataclass
@@ -419,7 +419,7 @@ class Return(metadata):
     value: 'AST'
     
 # Defining the AST
-AST = Variable|BinOp|Bool|Int|Float|Declare|If|UnOp|Str|Slice|nil|PRINT|Seq|For|DeclareFun|FunCall|zList|list_append|list_insert|list_len|list_remove|list_pop|Return|FnObject|ClassObject|InstanceObject|DeclareClass|Get|Set|This|Block
+AST = Variable|BinOp|Bool|Int|Float|Declare|If|UnOp|Str|Slice|nil|PRINT|Seq|For|DeclareFun|FunCall|zArray|array_append|array_insert|array_len|array_remove|array_pop|Return|FnObject|ClassObject|InstanceObject|DeclareClass|Get|Set|This|Block
 
 # Defining a Number as both an integer as  well as Float
 Number = Float|Int
@@ -458,7 +458,7 @@ def evaluate(program: AST, scopes: Scopes = None):
         case This(lineNumber, id):
             return scopes.getVariable(Variable(lineNumber, "this", id ))
         
-        case zList(dtype, value):
+        case zArray(dtype, value):
             return program
 
         case Block(blockStatements):
@@ -485,8 +485,8 @@ def evaluate(program: AST, scopes: Scopes = None):
                     if (isinstance(firstOperand, Str) and isinstance(secondOperand, Str)):
                         return Str(firstOperand.value + secondOperand.value)
                     
-                    if (isinstance(firstOperand, zList) and isinstance(secondOperand, zList)):
-                        return zList(firstOperand.dtype, firstOperand.elements + secondOperand.elements)
+                    if (isinstance(firstOperand, zArray) and isinstance(secondOperand, zArray)):
+                        return zArray(firstOperand.dtype, firstOperand.elements + secondOperand.elements)
                     
                     #code for string concatenation ends
                     
@@ -598,10 +598,13 @@ def evaluate(program: AST, scopes: Scopes = None):
         
         case Declare(lineNumber, var, value, dtype, isConst) as d:
             # Evaluating the expression before declaration
-            if (dtype == zList):
-                if (value != nil()):
-                    for i in range(len(value.elements)):
-                        value.elements[i]=evaluate(value.elements[i], scopes)
+            if (dtype == zArray):
+                if(isinstance(value, zArray)):
+                    if (value != nil()):
+                        for i in range(len(value.elements)):
+                            value.elements[i]=evaluate(value.elements[i], scopes)
+                else:
+                    value = evaluate(value, scopes)
             else:
                 value = evaluate(value, scopes)
             
@@ -625,7 +628,7 @@ def evaluate(program: AST, scopes: Scopes = None):
 
         case Slice(lineNumber, value_, first, second):
             elem = evaluate(value_, scopes)
-            if(not(isinstance(elem, zList))):
+            if(not(isinstance(elem, zArray))):
                 if (first.value>second.value or first.value < 0 or second.value > len(elem.value)):
                     RuntimeError("Index out of bounds", lineNumber, "indexError")
                 
@@ -637,13 +640,13 @@ def evaluate(program: AST, scopes: Scopes = None):
                     return elem.elements[first.value:first.value+1][0]
                 if (first.value>second.value or first.value < 0 or second.value > len(elem.elements)):
                     RuntimeError("Index out of bounds", lineNumber, "indexError")
-                return zList(elem.dtype, elem.elements[first.value:second.value])
+                return zArray(elem.dtype, elem.elements[first.value:second.value])
         
         case PRINT(lineNumber, print_stmt, sep,end):
             for i,stmt in  enumerate(print_stmt):
                 out=evaluate(stmt,scopes)
-                if(isinstance(out,zList)):
-                    l=traverse_list(out)
+                if(isinstance(out,zArray)):
+                    l=traverse_array(out)
                     if (i==len(print_stmt)-1):
                         print(l, end=end.value)
                     else:
@@ -688,34 +691,34 @@ def evaluate(program: AST, scopes: Scopes = None):
             scopes.endScope()
             return retVal
         
-        case list_append(lineNumber, element, var):
+        case array_append(lineNumber, element, var):
             l = scopes.getVariable(var)
             element=evaluate(element, scopes)
             l.elements.append(element)
             return nil()
         
-        case list_remove(lineNumber, index , var):
+        case array_remove(lineNumber, index , var):
             l=scopes.getVariable(var)
             # Checking if the index is out of bounds
             index=evaluate(index, scopes)
             if (len(l.elements) <= index.value):
-                RuntimeError(f"list index out of bounds", lineNumber, 'indexError')
+                RuntimeError(f"array index out of bounds", lineNumber, 'indexError')
             return l.elements.pop(index.value)
         
-        case list_len(lineNumber, var):
+        case array_len(lineNumber, var):
             l = evaluate(var, scopes)
-            if(isinstance(l,zList)):
+            if(isinstance(l,zArray)):
                 return Int(len(l.elements))
             elif(isinstance(l,Str)):
                 return Int(len(l.value))
         
-        case list_pop(lineNumber, list_name):
-            l=scopes.getVariable(list_name)
+        case array_pop(lineNumber, array_name):
+            l=scopes.getVariable(array_name)
             if (len(l.elements) == 0):
-                RuntimeError(f"Cannot popout from an empty list", lineNumber, 'indexError')
+                RuntimeError(f"Cannot popout from an empty array", lineNumber, 'indexError')
             return l.elements.pop()
         
-        case list_insert(lineNumber, index, element, var):
+        case array_insert(lineNumber, index, element, var):
             l = scopes.getVariable(var)
             element=evaluate(element, scopes)
             l.elements.insert(index.value, element)

@@ -40,8 +40,8 @@ def createDummyObject(type_ : type):
         return Float(0)
     elif type_ == nil:
         return nil()
-    elif issubclass(type_, zList):
-        return zList(None, None)
+    elif issubclass(type_, zArray):
+        return zArray(None, None)
 
 
 def typecheckAST(program: AST, scopes: Scopes):
@@ -53,17 +53,17 @@ def typecheckAST(program: AST, scopes: Scopes):
     except TypeCheckException as e:
         raise e
 
-def typecheckList(lst: zList, lineNumber: int, scopes:Scopes):
+def typecheckArray(lst: zArray, lineNumber: int, scopes:Scopes):
     for element in lst.elements:
         element_ret = typecheck(element, scopes)
         if not issubclass(element_ret, lst.dtype):
-            typeCheckError(f"Cannot initialize a list of type {lst.dtype} with element of type {type(element)}.", lineNumber)
-        if isinstance(element_ret, zList):
-            typecheckList(element, lineNumber, scopes)
-    return zList
+            typeCheckError(f"Cannot initialize a array of type {lst.dtype} with element of type {type(element)}.", lineNumber)
+        if isinstance(element_ret, zArray):
+            typecheckArray(element, lineNumber, scopes)
+    return zArray
 
 def dimensions(lst):
-    if isinstance(lst, zList):
+    if isinstance(lst, zArray):
         return [len(lst.elements)] + dimensions(lst.elements[0])
     else:
         return []
@@ -96,14 +96,13 @@ def typecheck(program: AST, scopes = None):
         case InstanceObject() as obj:
             return instanceType(obj.zClass)
         
-        case zList(dtype, lst):
-            return zList
+        case zArray(dtype, lst):
+            return zArray
         
         case BinOp(lineNumber, operator, firstOperand, secondOperand):
             # Getting the operand types
             firstOperandType = typecheck(firstOperand, scopes)
             secondOperandType = typecheck(secondOperand, scopes)
-            
             # Checking if the operator is defined
             if (operator not in BINARY_OPERATORS):
                 typeCheckError(f"Binary Operator {operator} not reconized", lineNumber)              
@@ -119,7 +118,7 @@ def typecheck(program: AST, scopes = None):
                 case  "+":
                     if (issubclass(firstOperandType, Str) and not checkTypeTwo(firstOperandType, secondOperandType, Str, Str)):
                         typeCheckError(errorString, lineNumber)
-                    elif (issubclass(firstOperandType, zList) and not checkTypeTwo(firstOperandType, secondOperandType, zList, zList)):
+                    elif (issubclass(firstOperandType, zArray) and not checkTypeTwo(firstOperandType, secondOperandType, zArray, zArray)):
                         typeCheckError(errorString, lineNumber)
                     elif (issubclass(firstOperandType, Number) and not checkTypeTwo(firstOperandType, secondOperandType, Number, Number)):
                         typeCheckError(errorString, lineNumber)
@@ -128,14 +127,16 @@ def typecheck(program: AST, scopes = None):
                         return Float
                     elif (issubclass(firstOperandType, Str)):
                         return Str
-                    elif (issubclass(firstOperandType, zList)):
-                        fo=scopes.getVariable(firstOperand)
-                        so=scopes.getVariable(secondOperand)
+                    elif (issubclass(firstOperandType, zArray)):
+                        # fo=scopes.getVariable(firstOperand)
+                        # so=scopes.getVariable(secondOperand)
+                        fo=evaluate(firstOperand,scopes)
+                        so=evaluate(secondOperand,scopes)
                         l1=dimensions(fo)
                         l2=dimensions(so)
-                        if(l1!=l2):
+                        if(len(l1)!=len(l2)):
                             typeCheckError(f"Cannot append arrays of two different dimensions", lineNumber)
-                        return zList
+                        return zArray
                     else:
                         return Int
                     
@@ -189,8 +190,7 @@ def typecheck(program: AST, scopes = None):
                     return Bool
                 
                 case "=":                    
-                    # Prevent assignment for lists (for now)
-                    if ((isinstance(secondOperandType, type)) and issubclass(secondOperandType, zList)):
+                    if ((isinstance(secondOperandType, type)) and issubclass(secondOperandType, zArray)):
                         typeCheckError(f"Cannot assign a list to a variable.", lineNumber)
                     elif (isinstance(secondOperandType, instanceType)):
                         scopes.updateVariable(firstOperand, InstanceObject(secondOperandType.name, {}))
@@ -234,11 +234,12 @@ def typecheck(program: AST, scopes = None):
             if (not isinstance(var, Variable)):
                 raise Exception("RHS of declaration must be of type \'Variable\'")
 
-            # Make sure all the elements of the list are of the type zList.dtype
-            if (dtype == zList):
+            # Make sure all the elements of the array are of the type zArray.dtype
+            if (dtype == zArray):
                 tempval=value
-                value = typecheckList(value, lineNumber, scopes)
+                value = typecheckArray(value, lineNumber, scopes)
                 scopes.declareVariable(var, tempval, dtype, isConst)
+
             else:
                 # Evaluating the expression before declaration
                 value = typecheck(value, scopes)
@@ -259,11 +260,11 @@ def typecheck(program: AST, scopes = None):
             tc = typecheck(value_, scopes)
             tf = typecheck(first, scopes)
             ts = typecheck(second, scopes)
-            if ((not isinstance(tc, type)) or (not(issubclass(tc, Str | zList)))):
+            if ((not isinstance(tc, type)) or (not(issubclass(tc, Str | zArray)))):
                 typeCheckError(f"Slice operation not defined for {type(tc).__name__}", lineNumber)
             if (not isinstance(tf, type) or not isinstance(ts, type)) or (not (issubclass(tf, Int) or issubclass(ts, Int))):
                 typeCheckError(f"Slice indices must be of {Int} type", lineNumber)
-            if (issubclass(ts,nil) and issubclass(tc,zList)):
+            if(issubclass(ts,nil) and issubclass(tc,zArray)):
                 element_type = scopes.getVariable(value_).dtype
                 return element_type
             return tc
@@ -332,57 +333,57 @@ def typecheck(program: AST, scopes = None):
                     typeCheckError(f"Invalid end {end} in PRINT at {lineNumber}")
             return nil
         
-        case list_append(lineNumber, element, list_name):
-            var_type = scopes.getVariableType(list_name)
-            lIsConst = scopes.getVariableIsConst(list_name)
-            lType = scopes.getVariable(list_name).dtype
+        case array_append(lineNumber, element, array_name):
+            var_type = scopes.getVariableType(array_name)
+            lIsConst = scopes.getVariableIsConst(array_name)
+            lType = scopes.getVariable(array_name).dtype
             element=typecheck(element,scopes)
-            if not(issubclass(var_type, zList)):
+            if not(issubclass(var_type, zArray)):
                 typeCheckError(f"Cannot append an element of type {(element)} to a {var_type}.", lineNumber)
             elif lIsConst:
-                typeCheckError(f"Cannot append an element to a constant list.", lineNumber, "constError")
+                typeCheckError(f"Cannot append an element to a constant array.", lineNumber, "constError")
             elif not (issubclass(element, lType)):
-                typeCheckError(f"Cannot append an element of type {(element)} to a list of type {lType}.", lineNumber)
+                typeCheckError(f"Cannot append an element of type {(element)} to a array of type {lType}.", lineNumber)
             return nil
         
-        case list_remove(lineNumber, index, list_name):
-            var_type = scopes.getVariableType(list_name)
-            lIsConst = scopes.getVariableIsConst(list_name)
-            if not(issubclass(var_type, zList)):
+        case array_remove(lineNumber, index, array_name):
+            var_type = scopes.getVariableType(array_name)
+            lIsConst = scopes.getVariableIsConst(array_name)
+            if not(issubclass(var_type, zArray)):
                 typeCheckError(f"Cannot remove an element from {var_type}.", lineNumber)
             elif lIsConst:
-                typeCheckError(f"Cannot remove an element from a constant list.", lineNumber, "integrityError")
+                typeCheckError(f"Cannot remove an element from a constant array.", lineNumber, "integrityError")
             return var_type
             
-        case list_len(lineNumber, l):
+        case array_len(lineNumber, l):
             l = typecheck(l, scopes)
-            if not(issubclass(l, zList|Str)):
+            if not(issubclass(l, zArray|Str)):
                 typeCheckError(f"length attribute not defined for variable of type  {l.__name__}.", lineNumber)
             return Int
         
-        case list_pop(lineNumber, list_name):
-            var_type = scopes.getVariableType(list_name)
-            lIsConst = scopes.getVariableIsConst(list_name)
-            if not(issubclass(var_type, zList)):
+        case array_pop(lineNumber, array_name):
+            var_type = scopes.getVariableType(array_name)
+            lIsConst = scopes.getVariableIsConst(array_name)
+            if not(issubclass(var_type, zArray)):
                 typeCheckError(f"Cannot popout an element from {var_type}.", lineNumber)
             elif lIsConst:
-                typeCheckError(f"Cannot popout an element from a constant list.", lineNumber, "constError")
+                typeCheckError(f"Cannot popout an element from a constant array.", lineNumber, "constError")
             return var_type
         
-        case list_insert(lineNumber, index, element, list_name):
-            var_type = scopes.getVariableType(list_name)
-            lIsConst = scopes.getVariableIsConst(list_name)
-            lType = scopes.getVariable(list_name).dtype
+        case array_insert(lineNumber, index, element, array_name):
+            var_type = scopes.getVariableType(array_name)
+            lIsConst = scopes.getVariableIsConst(array_name)
+            lType = scopes.getVariable(array_name).dtype
             element=typecheck(element, scopes)
             index=typecheck(index, scopes)
-            if not(issubclass(var_type, zList)):
+            if not(issubclass(var_type, zArray)):
                 typeCheckError(f"Cannot append an element of type {element} to a {var_type}.", lineNumber)
             elif lIsConst:
-                typeCheckError(f"Cannot append an element to a constant list.", lineNumber, "constError")
+                typeCheckError(f"Cannot append an element to a constant array.", lineNumber, "constError")
             elif not (issubclass(index, Int)):
                 typeCheckError(f"index must be an integer.", lineNumber)
             elif not (issubclass(element, lType)):
-                typeCheckError(f"Cannot append an element of type {element} to a list of type {lType}.", lineNumber)
+                typeCheckError(f"Cannot append an element of type {element} to a array of type {lType}.", lineNumber)
             return nil
          
         case DeclareFun(lineNumber, f, return_type, params_type, params, body, function_type):

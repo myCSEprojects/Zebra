@@ -1,5 +1,5 @@
-zout("testcase 1 for lists");
-list int a = [1,2,3];
+zout("testcase 1 for arrays");
+array int a = [1,2,3];
 zout(length(a));
 append(2, a);
 zout(length(a));
@@ -27,19 +27,21 @@ append(1,a);
 append(2,a);
 append(3,a);
 
-list int li = [4,5,6];
+array int li = [4,5,6];
 zout(a+li);
+array array int p = [[1],[2],[3]];
+zout(p);
+array int zaa = [3,6];
+zout("testcase 2 for nested arrays");
 
-zout("testcase 2 for nested lists");
-
-list list int b = [[100],[200],[300]];
+array array int b = [[100],[200],[300]];
 zout(length(b));
 append([2], b);
 zout(length(b));
 remove(2, b);
 zout(length(b));
 zout(b);
-list list int lii = [[4],[5],[6]];
+array array int lii = [[4],[5],[6]];
 zout(b+lii);
 
 

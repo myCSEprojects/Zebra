@@ -102,6 +102,9 @@ def resolve(program: AST, scopes : ResolverScopes = None):
             # Declaring the parameters
             for param in params:
                 scopes.declareVariable(param.name, param)
+            for i in range(len(params_type)):
+                if ((not isinstance(params_type[i], type)) and isinstance(params_type[i], instanceType)):
+                    params_type[i] = instanceType(scopes.getVariable(params_type[i].name.name, lineNumber))
             # Resolving the body
             resolvedBody = resolve(body, scopes)
             scopes.endScope()

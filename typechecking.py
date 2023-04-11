@@ -387,8 +387,14 @@ def typecheck(program: AST, scopes = None):
             return nil
          
         case DeclareFun(lineNumber, f, return_type, params_type, params, body, function_type):
+            
             # Declaring the function in the current scope
             scopes.declareFun(f, FnObject(function_type, params_type, params, body, return_type)) 
+
+            for i in range(len(params_type)):
+                if (not isinstance(params_type[i], type) and isinstance(params_type[i], instanceType)):
+                    params_type[i] = instanceType(scopes.getVariable(params_type[i].name))
+            
 
             # Strategy to type check the body
 
@@ -397,7 +403,10 @@ def typecheck(program: AST, scopes = None):
 
             # 2. Initialize all the params using a dummy object
             for param, param_type in zip(params, params_type):
-                scopes.declareVariable(param, createDummyObject(param_type), param_type, False)
+                if (not isinstance(param_type, type) and isinstance(param_type, instanceType)):
+                    scopes.declareVariable(param, InstanceObject(param_type.name, {}), param_type, False)
+                else:
+                    scopes.declareVariable(param, createDummyObject(param_type), param_type, False)
 
             # 3. type check the body
             retTypes = typecheck(body, scopes)
@@ -405,7 +414,10 @@ def typecheck(program: AST, scopes = None):
             for retType in retTypes:
                 if retType != nil:
                     retType = retType.value
-                if ((not issubclass(retType, nil)) and (not(issubclass(retType, return_type)))):
+                if (not isinstance(retType, type)) and (not(isinstance(return_type, type))):
+                    if retType.name != return_type.name:
+                        typeCheckError(f"Not matching the expected return type of the function", lineNumber)
+                elif ((not issubclass(retType, nil)) and (not(issubclass(retType, return_type)))):
                     typeCheckError(f"Not matching the expected return type of the function", lineNumber)
             
             # 5. return nil as declaration statements have no return type
@@ -427,7 +439,7 @@ def typecheck(program: AST, scopes = None):
                         raise typeCheckError(f"Number of arguments for init method of {fn.name} does not match", lineNumber, "integrityError")
                     for i in range(len(params_type)):
                         arg = typecheck(args[i], scopes)
-                        if (((not isinstance(params_type[i], type)) and params_type[i] != arg) or not(issubclass(arg, params_type[i]))):
+                        if (((not isinstance(params_type[i], type)) and params_type[i].name != arg.name) or not(issubclass(arg, params_type[i]))):
                             raise typeCheckError(f"{i+1}th Argument passed to the init function is of invalid type", lineNumber)
 
                 # In case the value arguments are passed but the init method does not exist    
@@ -441,10 +453,16 @@ def typecheck(program: AST, scopes = None):
             argv = []
             for arg in args:
                 argv.append(typecheck(arg, scopes))
+            
             # Only typechecking the param type and the argument types
             p_types = fn.params_types
             for i in range(len(p_types)):
-                if (not(issubclass(p_types[i],(argv[i])))):
+                if ((not isinstance(p_types[i], type)) and isinstance(p_types[i], instanceType)):
+                    
+                    if (isinstance(argv[i], type) or not(isinstance(argv[i], instanceType)) or argv[i].name != p_types[i].name):
+                        raise typeCheckError(f"{i+1}th Argument passed to the function is of invalid type", lineNumber)
+                        
+                elif (not(issubclass(p_types[i],(argv[i])))):
                     raise typeCheckError(f"{i+1}th Argument passed to the function is of invalid type", lineNumber)
 
             # Returning the return type of the function

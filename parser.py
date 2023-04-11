@@ -482,12 +482,18 @@ class Parser:
 
         # Checking the return type of the function
         rt = self.lexer.peek_token()
-        if self.lexer.peek_token().val not in dtypes:
-            ParseError(self, f"Expected a data type but given {rt.val}", rt.lineNumber)
+        if rt.val not in dtypes and rt.val not in classList:
+            ParseError(self, f"Expected a data type or a class name but given {rt.val}", rt.lineNumber)
         
         # Assigning the return type of the function
         r = self.lexer.peek_token()
-        r_type = dtypes_dict[r.val]
+        
+        # Getting return type
+        if rt.val in dtypes:
+            r_type = dtypes_dict[r.val]
+        else:
+            r_type = instanceType(ClassObject(rt.val, {}, 0))
+        
         self.lexer.advance()
         
         # Generating a Variable for the function
@@ -505,11 +511,15 @@ class Parser:
             dt = self.lexer.peek_token()    # The data type of the parameter
             
             # Invalid Data Type for the parameter
-            if dt.val not in dtypes:
-                ParseError(self, f"Expected a data type but given {dt.val}", dt.lineNumber)
+            if dt.val not in dtypes and dt.val not in classList:
+                ParseError(self, f"Expected a data type or a class name but given {dt.val}", dt.lineNumber)
 
-            # Appending the data type to the params_type array
-            param_types.append(dtypes_dict[dt.val])
+            # Appending the data type to the params_type list
+            if dt.val in dtypes:
+                param_types.append(dtypes_dict[dt.val])
+            else:
+                param_types.append(instanceType(ClassObject(dt.val, {}, 0)))
+            
             self.lexer.advance()
 
             # Obtaining the parameter name and appending to the params array

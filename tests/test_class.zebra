@@ -100,3 +100,22 @@ for(int i = 1; i < 10; i = i + 1){
     node = node.next;
 }
 
+@ Checking the ability to pass instances to functions
+class Bagel{
+    int a;
+}
+
+func int fun(Bagel a){
+    a.a = 1;
+    return 1;
+}
+
+Bagel x = Bagel();
+
+@ Set x.a = 1
+fun(x);
+
+zout(x.a);
+
+
+

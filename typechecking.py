@@ -603,7 +603,7 @@ def typecheck(program: AST, scopes = None):
                 if (attr == name):
                     field = classObj.methods[attr]
                     if (isinstance(field, Declare)):
-                        if isinstance(field.dtype, type):
+                        if isinstance(field.dtype, type) or isinstance(field.dtype, arrayType):
                             return field.dtype
                         elif isinstance(field.dtype, instanceType):
                             return instanceType(field.dtype.name)

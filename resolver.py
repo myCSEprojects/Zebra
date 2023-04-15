@@ -62,8 +62,14 @@ def resolve(program: AST, scopes : ResolverScopes = None):
     
     match program:
 
-        case Int() | Float() | Bool() | Str() | nil() | zArray() as literal:
+        case Int() | Float() | Bool() | Str() | nil() as literal:
             return literal
+        
+        case zArray():
+            # Resolving the elements
+            for i in range(len(program.elements)):
+                program.elements[i] = resolve(program.elements[i], scopes)
+            return program
         
         case Variable(lineNumber, name, id) as v:
             # Getting the resolved variable
@@ -119,6 +125,17 @@ def resolve(program: AST, scopes : ResolverScopes = None):
             resolvedValue = resolve(value, scopes)
             return Set(lineNumber, resolvedVar, name, resolvedValue)
         
+        case AtIndex(lineNumber, var, index):
+            resolvedVar = resolve(var, scopes)
+            resolvedIndex = resolve(index, scopes)
+            return AtIndex(lineNumber, resolvedVar, resolvedIndex)
+        
+        case SetAtIndex(lineNumber, var, index, value):
+            resolvedVar = resolve(var, scopes)
+            resolvedIndex = resolve(index, scopes)
+            resolvedValue = resolve(value, scopes)
+            return SetAtIndex(lineNumber, resolvedVar, resolvedIndex, resolvedValue)
+
         case FunCall(lineNumber, var, args):
             # Resolving the function variable
             resolvedVar = resolve(var, scopes)

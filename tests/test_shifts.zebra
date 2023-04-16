@@ -1,4 +1,4 @@
-int a = 8 << 1;
+var int a = 8 << 1;
 zout(a);
-int b = 8 >> 1;
+var int b = 8 >> 1;
 zout(b);

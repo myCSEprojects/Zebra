@@ -1,4 +1,4 @@
-int i = 1;
+var int i = 1;
 while(i < 10){
      zout(i);
      i = i + 1;

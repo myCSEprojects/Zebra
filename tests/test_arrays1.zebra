@@ -107,3 +107,16 @@ zout(b);
 
 @ This should give an index error(runtime)
 b[-1];
+
+
+@ var int f=length(a)-1;
+@ zout(f);
+@ var int g=length(array(int){1,2,3});
+@ zout(g);
+@ insert(0, 2, a);
+@ zout(a);
+@ remove(length(a)-1, a);
+@ zout(a);
+@ pop(a);
+@ zout(a);
+

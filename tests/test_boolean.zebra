@@ -1,0 +1,3 @@
+var boolean a=5;
+var boolean b=~a;
+zout(b);

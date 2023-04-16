@@ -5,6 +5,7 @@ from sim import *
 import pprint
 from error import *
 from resolver import *
+import time 
 try:
     import readline
 except:
@@ -44,9 +45,9 @@ def execute(stream:str, resolverScopes: ResolverScopes, typecheckerScopes: Scope
         # pp.pprint(resolvedProgram)
         # Performing typechecking
         typecheckAST(resolvedProgram, typecheckerScopes) # any TypecheckError in the stream would be caught in the typecheckAST function and the error flag would be set
-
         output = evaluate(resolvedProgram, scopes)
         return output
+        
     
     except (RuntimeException, TypeCheckException, ParseException, ResolveException, RecursionError) as e:
         isError = True

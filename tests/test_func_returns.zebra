@@ -5,5 +5,5 @@ func int foo(int a,int b){
     return a+b;
 }
 
-int c = foo(1,2);
+var int c = foo(1,2);
 zout(c);

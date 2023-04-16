@@ -1,18 +1,18 @@
-int n = 3;
-int sumofn = 0;
+var int n = 3;
+var int sumofn = 0;
 
-for(int i = 1; i <= n; i=i+1) {
+for(var int i = 1; i <= n; i=i+1) {
     sumofn = sumofn + i;
 }
 
-int sos = 0;
-for(int i = 1; i <= n; i=i+1) {
+var int sos = 0;
+for(var int i = 1; i <= n; i=i+1) {
     sos = sos + i*i;
 }
 
-int sqos = sumofn * sumofn;
+var int sqos = sumofn * sumofn;
 
-int difference = sqos - sos;
+var int difference = sqos - sos;
 
 
 zout(difference);

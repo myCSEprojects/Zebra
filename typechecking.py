@@ -301,8 +301,8 @@ def typecheck(program: AST, scopes = None):
                 typeCheckError(f"Slice indices must be of {Int} type", lineNumber)
             if (not isinstance(tc, type) and isinstance(tc, arrayType)):
                 return tc
-            elif (isinstance(tc, type) and isinstance(tc, Str)):
-                return Str
+            elif (isinstance(tc, type) and issubclass(tc, Str)):
+                return tc
             else:
                 typeCheckError(f"Slice operation not defined for {tc}", lineNumber)
             return tc

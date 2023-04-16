@@ -1,5 +1,5 @@
-int w = 20;
-int h = 20;
+var int w = 20;
+var int h = 20;
 
 func int fact(int x){
     if (x == 1 || x == 0){
@@ -10,7 +10,7 @@ func int fact(int x){
     }
 }
 
-int n = fact(w + h);
+var int n = fact(w + h);
 
-int d = fact(w) * fact(h);
+var int d = fact(w) * fact(h);
 zout(n/d);

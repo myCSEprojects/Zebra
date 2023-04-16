@@ -1,0 +1,6 @@
+var array(int) a = array(int) {1,2,3};
+
+var array(int) b = a + array(int){};
+a[0] = 5;
+
+zout(b);

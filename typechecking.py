@@ -34,14 +34,16 @@ def createDummyObject(type_ : type):
     '''
     Utility to Create a dummy(useles) object from the given type
     '''
-    if type_ == Int or type_ == Bool or type_ == Str:
-        return type_(None)
+    if type_ == Int:
+        return Int(0)
+    elif type_ == Bool:
+        return Bool(False)
+    elif type_ == Str:
+        return Str("")
     elif type_ == Float:
         return Float(0)
     elif type_ == nil:
         return nil()
-    elif issubclass(type_, zArray):
-        return zArray(None, None)
 
 
 def typecheckAST(program: AST, scopes: Scopes):
@@ -54,13 +56,32 @@ def typecheckAST(program: AST, scopes: Scopes):
         raise e
 
 def typecheckArray(lst: zArray, lineNumber: int, scopes:Scopes):
-    for element in lst.elements:
-        element_ret = typecheck(element, scopes)
-        if not issubclass(element_ret, lst.dtype):
-            typeCheckError(f"Cannot initialize a array of type {lst.dtype} with element of type {type(element)}.", lineNumber)
-        if isinstance(element_ret, zArray):
-            typecheckArray(element, lineNumber, scopes)
-    return zArray
+    '''
+    Utility function to check the sanity of the array
+    '''
+    if (lst.dtype[1] == zArray):
+        for element in lst.elements:
+            if isinstance(element, zArray):
+                # Recursively check the sanity of the array
+                typecheckArray(element, lineNumber, scopes)
+
+                # Check if the data type of the elements of the array is same as the data type mentioned in the array
+                if (lst.dtype[1:] != element.dtype):
+                    typeCheckError(f"Array of type {lst.dtype} cannot have elements of type {typecheck(element, scopes)}", lineNumber)
+            else:
+                et = typecheck(element, scopes)
+                if (isinstance(et, type)):
+                    typeCheckError(f"Array of type {lst.dtype} cannot have elements of type {et.__name__}", lineNumber)
+                elif ((not isinstance(et, arrayType))):
+                    typeCheckError(f"Array of type {lst.dtype} cannot have elements of type {et}", lineNumber)
+                elif (et.dtype != lst.dtype[1:]):
+                    typeCheckError(f"Array of type {lst.dtype} cannot have elements of type {et}", lineNumber)
+    else:
+        for element in lst.elements:
+            et = typecheck(element, scopes)
+            if (et != lst.dtype[1]):
+                typeCheckError(f"Array of type {lst.dtype[1]} cannot have elements of type {et}", lineNumber)
+
 
 def dimensions(lst):
     if isinstance(lst, zArray):
@@ -96,8 +117,9 @@ def typecheck(program: AST, scopes = None):
         case InstanceObject() as obj:
             return instanceType(obj.zClass)
         
-        case zArray(dtype, lst):
-            return zArray
+        case zArray(lineNumber, dtype, lst) as arr:
+            typecheckArray(arr, lineNumber, scopes)
+            return arrayType(arr.dtype)
         
         case BinOp(lineNumber, operator, firstOperand, secondOperand):
             # Getting the operand types
@@ -110,37 +132,37 @@ def typecheck(program: AST, scopes = None):
             # Raising type error in case left or the right side donot evaluate to a type
             if (operator != '=' and (((not isinstance(firstOperandType, type)) and isinstance(firstOperandType, instanceType)) or ((not isinstance(secondOperandType, type)) and isinstance(secondOperandType, instanceType)))):
                 typeCheckError(f"Operator {operator} not defined between {firstOperandType} and {secondOperandType}", lineNumber)
-
+            if (operator not in ['=', '+'] and (((not isinstance(firstOperandType, type)) and isinstance(firstOperandType, arrayType)) or ((not isinstance(secondOperandType, type)) and isinstance(secondOperandType, arrayType)))):
+                typeCheckError(f"Operator {operator} not defined between {firstOperandType} and {secondOperandType}", lineNumber)
+            
             if (operator != '='):
+                ft = firstOperandType.__name__ if isinstance(firstOperandType, type) else firstOperandType
+                st = secondOperandType.__name__ if isinstance(secondOperandType, type) else secondOperandType
                 # General BinOp type error string
-                errorString = f"Operator {operator} not defined between data types {firstOperandType} and {secondOperandType}"
+                errorString = f"Operator {operator} not defined between data types {ft} and {st}"
             match operator:
                 case  "+":
-                    if (issubclass(firstOperandType, Str) and not checkTypeTwo(firstOperandType, secondOperandType, Str, Str)):
+                    if ((not isinstance(firstOperandType, type)) and (not isinstance(secondOperandType, type)) and (firstOperandType != secondOperandType)):
                         typeCheckError(errorString, lineNumber)
-                    elif (issubclass(firstOperandType, zArray) and not checkTypeTwo(firstOperandType, secondOperandType, zArray, zArray)):
+                    elif ((isinstance(firstOperandType, type)) and (isinstance(secondOperandType, type)) and issubclass(firstOperandType, Str) and not checkTypeTwo(firstOperandType, secondOperandType, Str, Str)):
                         typeCheckError(errorString, lineNumber)
-                    elif (issubclass(firstOperandType, Number) and not checkTypeTwo(firstOperandType, secondOperandType, Number, Number)):
+                    elif ((isinstance(firstOperandType, type)) and (isinstance(secondOperandType, type)) and issubclass(firstOperandType, Number) and not checkTypeTwo(firstOperandType, secondOperandType, Number, Number)):
                         typeCheckError(errorString, lineNumber)
 
-                    if (issubclass(firstOperandType, Float) or issubclass(secondOperandType, Float)):
+                    if ((not isinstance(firstOperandType, type)) and isinstance(firstOperandType, arrayType)):
+                        return firstOperandType
+                    elif (issubclass(firstOperandType, Float) or issubclass(secondOperandType, Float)):
                         return Float
                     elif (issubclass(firstOperandType, Str)):
                         return Str
-                    elif (issubclass(firstOperandType, zArray)):
-                        # fo=scopes.getVariable(firstOperand)
-                        # so=scopes.getVariable(secondOperand)
-                        fo=evaluate(firstOperand,scopes)
-                        so=evaluate(secondOperand,scopes)
-                        l1=dimensions(fo)
-                        l2=dimensions(so)
-                        if(len(l1)!=len(l2)):
-                            typeCheckError(f"Cannot append arrays of two different dimensions", lineNumber)
-                        return zArray
                     else:
                         return Int
                     
                 case  "-":
+                    
+                    if ((not isinstance(firstOperandType, type)) and (not isinstance(secondOperandType, type))):
+                        typeCheckError(errorString, lineNumber)
+
                     if not checkTypeTwo(firstOperandType, secondOperandType, Number, Number):
                         typeCheckError(errorString, lineNumber)
                     
@@ -150,11 +172,16 @@ def typecheck(program: AST, scopes = None):
                         return Int
 
                 case "/":
+                    if ((not isinstance(firstOperandType, type)) and (not isinstance(secondOperandType, type))):
+                        typeCheckError(errorString, lineNumber)
+
                     if not checkTypeTwo(firstOperandType, secondOperandType, Number, Number):
                         typeCheckError(errorString, lineNumber)
                     return Float
                 
                 case "*":
+                    if ((not isinstance(firstOperandType, type)) and (not isinstance(secondOperandType, type))):
+                        typeCheckError(errorString, lineNumber)
                     if (issubclass(firstOperandType,Str) and issubclass(secondOperandType, Int)):
                         return Str
 
@@ -169,11 +196,15 @@ def typecheck(program: AST, scopes = None):
                             return Int
                 
                 case "//" :
+                    if ((not isinstance(firstOperandType, type)) and (not isinstance(secondOperandType, type))):
+                        typeCheckError(errorString, lineNumber)
                     if not checkTypeTwo(firstOperandType, secondOperandType, Number, Number):
                         typeCheckError(errorString, lineNumber)
                     return Int
                 
                 case "%" | "<<" | ">>" | "&" | "|":
+                    if ((not isinstance(firstOperandType, type)) and (not isinstance(secondOperandType, type))):
+                        typeCheckError(errorString, lineNumber)
                     if not checkTypeTwo(firstOperandType, secondOperandType, Int, Int):
                         typeCheckError(errorString, lineNumber)
                     return Int
@@ -185,21 +216,25 @@ def typecheck(program: AST, scopes = None):
                     return Bool
                 
                 case "&&" | "||": 
+                    if ((not isinstance(firstOperandType, type)) and (not isinstance(secondOperandType, type))):
+                        typeCheckError(errorString, lineNumber)
                     if not checkTypeTwo(firstOperandType, secondOperandType, AST, AST):
                         typeCheckError(errorString, lineNumber)
                     return Bool
                 
-                case "=":                    
-                    if ((isinstance(secondOperandType, type)) and issubclass(secondOperandType, zArray)):
-                        typeCheckError(f"Cannot assign a list to a variable.", lineNumber)
+                case "=":         
+                    if ((not isinstance(secondOperandType, type)) and isinstance(secondOperandType, arrayType)):
+                        scopes.updateVariable(firstOperand, zArray(lineNumber, secondOperandType.dtype, []))
+                        return secondOperandType
                     elif (isinstance(secondOperandType, instanceType)):
                         scopes.updateVariable(firstOperand, InstanceObject(secondOperandType.name, {}))
                         return secondOperandType
-                    
                     scopes.updateVariable(firstOperand, createDummyObject(secondOperandType))
                     return secondOperandType
                 
                 case "^":
+                    if ((not isinstance(firstOperandType, type)) and (not isinstance(secondOperandType, type))):
+                        typeCheckError(errorString, lineNumber)
                     if not checkTypeTwo(firstOperandType, secondOperandType, Number, Number):
                         typeCheckError(errorString, lineNumber)
                     if (issubclass(firstOperandType, Float) or issubclass(secondOperandType, Float)):
@@ -235,10 +270,11 @@ def typecheck(program: AST, scopes = None):
                 raise Exception("RHS of declaration must be of type \'Variable\'")
 
             # Make sure all the elements of the array are of the type zArray.dtype
-            if (dtype == zArray):
-                tempval=value
-                value = typecheckArray(value, lineNumber, scopes)
-                scopes.declareVariable(var, tempval, dtype, isConst)
+            if ((not isinstance(dtype, type)) and isinstance(dtype, arrayType)):
+                at = typecheck(value, scopes)
+                if (at != dtype):
+                    typeCheckError(f"Cannot initialize {dtype} with {at}.", lineNumber)
+                scopes.declareVariable(var, nil(), dtype, isConst)
 
             else:
                 # Evaluating the expression before declaration
@@ -260,13 +296,15 @@ def typecheck(program: AST, scopes = None):
             tc = typecheck(value_, scopes)
             tf = typecheck(first, scopes)
             ts = typecheck(second, scopes)
-            if ((not isinstance(tc, type)) or (not(issubclass(tc, Str | zArray)))):
-                typeCheckError(f"Slice operation not defined for {type(tc).__name__}", lineNumber)
+            
             if (not isinstance(tf, type) or not isinstance(ts, type)) or (not (issubclass(tf, Int) or issubclass(ts, Int))):
                 typeCheckError(f"Slice indices must be of {Int} type", lineNumber)
-            if(issubclass(ts,nil) and issubclass(tc,zArray)):
-                element_type = scopes.getVariable(value_).dtype
-                return element_type
+            if (not isinstance(tc, type) and isinstance(tc, arrayType)):
+                return tc
+            elif (isinstance(tc, type) and isinstance(tc, Str)):
+                return Str
+            else:
+                typeCheckError(f"Slice operation not defined for {tc}", lineNumber)
             return tc
 
         case While(lineNumber, condition, block) :            #checking while condition data type
@@ -334,61 +372,83 @@ def typecheck(program: AST, scopes = None):
             return nil
         
         case array_append(lineNumber, element, array_name):
-            var_type = scopes.getVariableType(array_name)
-            lIsConst = scopes.getVariableIsConst(array_name)
-            lType = scopes.getVariable(array_name).dtype
-            element=typecheck(element,scopes)
-            if not(issubclass(var_type, zArray)):
-                typeCheckError(f"Cannot append an element of type {(element)} to a {var_type}.", lineNumber)
-            elif lIsConst:
-                typeCheckError(f"Cannot append an element to a constant array.", lineNumber, "constError")
-            elif not (issubclass(element, lType)):
-                typeCheckError(f"Cannot append an element of type {(element)} to a array of type {lType}.", lineNumber)
+            var_type = typecheck(array_name, scopes)
+            element = typecheck(element,scopes)
+            if (not isinstance(var_type, type) and isinstance(var_type, arrayType)):
+                if (not isinstance(element, type) and isinstance(element, arrayType)):
+                    if (var_type.dtype[1:] != element.dtype) :
+                        typeCheckError(f"Cannot append {element} to {var_type}.", lineNumber)
+                elif (isinstance(element, type)):
+                    if (var_type.dtype[1] != element):
+                        typeCheckError(f"Cannot append {element.__name__} to {var_type}.", lineNumber)
+                elif isinstance(element, instanceType):
+                    if (var_type.dtype[1] != element.name):
+                        typeCheckError(f"Cannot append {element} to {var_type}.", lineNumber)
+            else:
+                typeCheckError(f"Expected an array for appending.", lineNumber)
             return nil
         
         case array_remove(lineNumber, index, array_name):
-            var_type = scopes.getVariableType(array_name)
-            lIsConst = scopes.getVariableIsConst(array_name)
-            if not(issubclass(var_type, zArray)):
-                typeCheckError(f"Cannot remove an element from {var_type}.", lineNumber)
-            elif lIsConst:
-                typeCheckError(f"Cannot remove an element from a constant array.", lineNumber, "integrityError")
-            return var_type
+            var_type = typecheck(array_name, scopes)
+            ind = typecheck(index, scopes)
+            if ((not isinstance(ind, type)) or (not issubclass(ind, Int))):
+                typeCheckError(f"Index must be an integer.", lineNumber)
+            
+            if not (not isinstance(var_type, type) and isinstance(var_type, arrayType)):
+                typeCheckError(f"Expected an array for appending.", lineNumber)
+            
+            if (var_type.dtype[1] == zArray):
+                return arrayType(var_type.dtype[1:])
+            else:
+                return var_type.dtype[1]
             
         case array_len(lineNumber, l):
             l = typecheck(l, scopes)
-            if not(issubclass(l, zArray|Str)):
+            if (not isinstance(l, type) and isinstance(l, arrayType)) or (issubclass(l, Str)):
+                return Int
+            else:
                 typeCheckError(f"length attribute not defined for variable of type  {l.__name__}.", lineNumber)
-            return Int
         
         case array_pop(lineNumber, array_name):
-            var_type = scopes.getVariableType(array_name)
-            lIsConst = scopes.getVariableIsConst(array_name)
-            if not(issubclass(var_type, zArray)):
-                typeCheckError(f"Cannot popout an element from {var_type}.", lineNumber)
-            elif lIsConst:
-                typeCheckError(f"Cannot popout an element from a constant array.", lineNumber, "constError")
-            return var_type
+            var_type = typecheck(array_name, scopes)
+            if (isinstance(var_type, type) or not isinstance(var_type, arrayType)):
+                typeCheckError(f"Expected an array for pop.", lineNumber)
+            if (var_type.dtype[1] == zArray):
+                return arrayType(var_type.dtype[1:])
+            else:
+                return var_type.dtype[1]
         
         case array_insert(lineNumber, index, element, array_name):
-            var_type = scopes.getVariableType(array_name)
-            lIsConst = scopes.getVariableIsConst(array_name)
-            lType = scopes.getVariable(array_name).dtype
-            element=typecheck(element, scopes)
-            index=typecheck(index, scopes)
-            if not(issubclass(var_type, zArray)):
-                typeCheckError(f"Cannot append an element of type {element} to a {var_type}.", lineNumber)
-            elif lIsConst:
-                typeCheckError(f"Cannot append an element to a constant array.", lineNumber, "constError")
-            elif not (issubclass(index, Int)):
-                typeCheckError(f"index must be an integer.", lineNumber)
-            elif not (issubclass(element, lType)):
-                typeCheckError(f"Cannot append an element of type {element} to a array of type {lType}.", lineNumber)
+            var_type = typecheck(array_name, scopes)
+            element = typecheck(element,scopes)
+            ind = typecheck(index, scopes)
+            if ((not isinstance(ind, type)) or (not issubclass(ind, Int))):
+                typeCheckError(f"Index must be an integer.", lineNumber)
+
+            if (not isinstance(var_type, type) and isinstance(var_type, arrayType)):
+                if (not isinstance(element, type) and isinstance(element, arrayType)):
+                    if (var_type.dtype[1:] != element.dtype) :
+                        typeCheckError(f"Cannot append {element} to {var_type}.", lineNumber)
+                elif (isinstance(element, type)):
+                    if (var_type.dtype[1] != element):
+                        typeCheckError(f"Cannot append {element.__name__} to {var_type}.", lineNumber)
+                elif isinstance(element, instanceType):
+                    if (var_type.dtype[1] != element.name):
+                        typeCheckError(f"Cannot append {element} to {var_type}.", lineNumber)
+            else:
+                typeCheckError(f"Expected an array for appending.", lineNumber)
+            
             return nil
          
         case DeclareFun(lineNumber, f, return_type, params_type, params, body, function_type):
+            
             # Declaring the function in the current scope
             scopes.declareFun(f, FnObject(function_type, params_type, params, body, return_type)) 
+
+            # Replacing the reolved references to class object with the actual class object
+            for i in range(len(params_type)):
+                if (not isinstance(params_type[i], type) and isinstance(params_type[i], instanceType)):
+                    params_type[i] = instanceType(scopes.getVariable(params_type[i].name))
 
             # Strategy to type check the body
 
@@ -397,7 +457,12 @@ def typecheck(program: AST, scopes = None):
 
             # 2. Initialize all the params using a dummy object
             for param, param_type in zip(params, params_type):
-                scopes.declareVariable(param, createDummyObject(param_type), param_type, False)
+                if (not isinstance(param_type, type) and isinstance(param_type, instanceType)):
+                    scopes.declareVariable(param, InstanceObject(param_type.name, {}), param_type, False)
+                elif (not isinstance(param_type, type) and isinstance(param_type, arrayType)):
+                    scopes.declareVariable(param, nil(), param_type, False)
+                else:
+                    scopes.declareVariable(param, createDummyObject(param_type), param_type, False)
 
             # 3. type check the body
             retTypes = typecheck(body, scopes)
@@ -405,7 +470,21 @@ def typecheck(program: AST, scopes = None):
             for retType in retTypes:
                 if retType != nil:
                     retType = retType.value
-                if ((not issubclass(retType, nil)) and (not(issubclass(retType, return_type)))):
+                if (not(isinstance(return_type, type)) and isinstance(return_type, instanceType)):
+                    if (not isinstance(retType, type)) and (isinstance(retType, instanceType)):
+                        if retType.name != return_type.name:
+                            typeCheckError(f"Not matching the expected return type of the function", lineNumber)
+                    else:
+                        typeCheckError(f"Not matching the expected return type of the function", lineNumber)
+                
+                elif (not(isinstance(return_type, type)) and isinstance(return_type, arrayType)):
+                    if (not isinstance(retType, type)) and (isinstance(retType, arrayType)):
+                        if retType.dtype != return_type.dtype:
+                            typeCheckError(f"Not matching the expected return type of the function", lineNumber)
+                    else:
+                        typeCheckError(f"Not matching the expected return type of the function", lineNumber)
+                
+                elif ((not issubclass(retType, nil)) and (not(issubclass(retType, return_type)))):
                     typeCheckError(f"Not matching the expected return type of the function", lineNumber)
             
             # 5. return nil as declaration statements have no return type
@@ -427,12 +506,25 @@ def typecheck(program: AST, scopes = None):
                         raise typeCheckError(f"Number of arguments for init method of {fn.name} does not match", lineNumber, "integrityError")
                     for i in range(len(params_type)):
                         arg = typecheck(args[i], scopes)
-                        if (((not isinstance(params_type[i], type)) and params_type[i] != arg) or not(issubclass(arg, params_type[i]))):
-                            raise typeCheckError(f"{i+1}th Argument passed to the init function is of invalid type", lineNumber)
+                        if (not isinstance(params_type[i], type)) and isinstance(params_type[i], instanceType):
+                            if (not isinstance(arg, type)) and isinstance(arg, instanceType):
+                                if arg.name != params_type[i].name:
+                                    typeCheckError(f"{i+1}th Argument passed to the init function is of invalid type", lineNumber)
+                            else:
+                                typeCheckError(f"{i+1}th Argument passed to the init function is of invalid type", lineNumber)
+                        elif (not isinstance(params_type[i], type)) and isinstance(params_type[i], arrayType):
+                            if (not isinstance(arg, type)) and isinstance(arg, arrayType):
+                                if arg.dtype != params_type[i].dtype:
+                                    typeCheckError(f"{i+1}th Argument passed to the init function is of invalid type", lineNumber)
+                            else:
+                                typeCheckError(f"{i+1}th Argument passed to the init function is of invalid type", lineNumber)
+                        elif not (issubclass(arg, params_type[i])):
+                            typeCheckError(f"{i+1}th Argument passed to the init function is of invalid type", lineNumber)
 
                 # In case the value arguments are passed but the init method does not exist    
                 elif len(args) > 0:
                     raise typeCheckError(f"Class {fn.name} does not have an init method", lineNumber, "integrityError")
+                
                 # Return the instanceType of the class
                 return instanceType(fn)
 
@@ -441,10 +533,17 @@ def typecheck(program: AST, scopes = None):
             argv = []
             for arg in args:
                 argv.append(typecheck(arg, scopes))
+            
             # Only typechecking the param type and the argument types
             p_types = fn.params_types
             for i in range(len(p_types)):
-                if (not(issubclass(p_types[i],(argv[i])))):
+                if ((not isinstance(p_types[i], type)) and isinstance(p_types[i], instanceType)):
+                    if (isinstance(argv[i], type) or not(isinstance(argv[i], instanceType)) or argv[i].name != p_types[i].name):
+                        raise typeCheckError(f"{i+1}th Argument passed to the function is of invalid type", lineNumber)
+                elif (not isinstance(p_types[i], type) and (isinstance(p_types[i], arrayType))):
+                    if (isinstance(argv[i], type) or not(isinstance(argv[i], arrayType)) or argv[i].dtype != p_types[i].dtype):
+                        raise typeCheckError(f"{i+1}th Argument passed to the function is of invalid type", lineNumber)
+                elif (not(issubclass(p_types[i],(argv[i])))):
                     raise typeCheckError(f"{i+1}th Argument passed to the function is of invalid type", lineNumber)
 
             # Returning the return type of the function
@@ -504,7 +603,7 @@ def typecheck(program: AST, scopes = None):
                 if (attr == name):
                     field = classObj.methods[attr]
                     if (isinstance(field, Declare)):
-                        if isinstance(field.dtype, type):
+                        if isinstance(field.dtype, type) or isinstance(field.dtype, arrayType):
                             return field.dtype
                         elif isinstance(field.dtype, instanceType):
                             return instanceType(field.dtype.name)
@@ -524,5 +623,52 @@ def typecheck(program: AST, scopes = None):
                         # Returning the function object
                         return fnObj
         
+        case AtIndex(lineNumber, var, index):
+            obj = typecheck(var, scopes)
+            index = typecheck(index, scopes)
+            
+            # Object must be an array or a string
+            if not ((not isinstance(obj, type) and isinstance(obj, arrayType)) or issubclass(obj, Str)):
+                typeCheckError(f"Cannot access index {index} on {obj}", lineNumber, "AttributeError")
+            
+            # Raise error if the index is not an integer
+            if (not isinstance(index, type)) or (not issubclass(index, Int)):
+                typeCheckError(f"Index should be an integer", lineNumber, "TypeError")
+            
+            if isinstance(obj, arrayType):
+                if (obj.dtype[1] == zArray):
+                    return arrayType(obj.dtype[1:])
+                else:
+                    return obj.dtype[1]
+            else:
+                return Str
+        
+        case SetAtIndex(lineNumber, var, index, value):
+            obj = typecheck(var, scopes)
+            index = typecheck(index, scopes)
+            value = typecheck(value, scopes)
+
+            # Raise error if the index is not an integer
+            if (not isinstance(index, type)) or (not issubclass(index, Int)):
+                typeCheckError(f"Index should be an integer", lineNumber, "TypeError")
+            
+            # Object must be an array or a string
+            if (((not isinstance(obj, type)) and (not isinstance(obj, arrayType))) or (isinstance(obj, type) and not issubclass(obj, Str))):
+                typeCheckError(f"Cannot access index {index.__name__} on {obj}", lineNumber, "AttributeError")
+            
+            if isinstance(obj, arrayType):
+                # Raise error if the value is not of the same type as the array
+                if (isinstance(value, type)):
+                    if [value] != obj.dtype[1:]:
+                        typeCheckError(f"Cannot assign {value} to {obj}", lineNumber, "TypeError")
+                elif ((not isinstance(value, arrayType)) or (value.dtype != obj.dtype[1:])):
+                    typeCheckError(f"Cannot assign {value} to {obj}", lineNumber, "TypeError")
+                return arrayType(obj.dtype[1:])
+            else:
+                # Raise error if the value is not a string
+                if (not isinstance(value, type)) or (not issubclass(value, Str)):
+                    typeCheckError(f"Cannot assign {value} to {obj}", lineNumber, "TypeError")
+                return Str
+
         case _ as v:
             raise Exception(f"Got {v}, Invalid Expression|Statement")

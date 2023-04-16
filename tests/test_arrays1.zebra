@@ -1,0 +1,109 @@
+@ Simple expression
+array(int) {1,2,3};
+
+@ Simple declaration
+var array(int) a = array(int){1,2,3};
+
+@ Simple concatenation
+zout(a + a);
+
+@ Testing concatenation for 2D array
+var array(array(int)) b = array(array(int)){
+                            array(int){1,2,3}
+                        };
+zout(b+b);
+
+@ This should be disallowed
+@ zout(b - b);
+
+@ Testing basic assignment
+b = array(array(int)){
+                        array(int) {1, 2, 3}
+                    };
+
+zout(b);
+
+@ This should give error
+@ b = array(int){1,2};
+
+@ Testing basic indexing of strings
+var string s = "test";
+zout(s[0]);
+
+@ Testing basic element assignment of the string
+s[0] = "1";
+zout(s);
+
+@ Testing basic indexing and element assignment of arrays
+b = b + b;
+b[0] = array(int){1};
+zout(b);
+zout(b[0]);
+
+@ Testing passing arrays to functions
+func int test(array(int) b){
+    zout(b);
+}
+
+test(a);
+
+@ This should give a type check error
+@ test(b);
+
+@ Testing return type of functions as array
+func array(int) retTest(int a, int b){
+    return array(int){a, b};
+}
+
+a = retTest(1, 2);
+zout(a);
+
+@ This should give type check error
+@ func array(int) retTestFail(int a, int b){
+@     return array(array(int)){array(int){a, b}};
+@ }
+
+@ Basic testing of length
+zout("length of a(", a, ") = ", length(a), sep = "");
+zout("length of '", "abc", "' = ", length("abc"), sep = "");
+
+@ Testing slice
+zout(slice a 0:1);
+
+@ Testing slice as the right side of assign 
+a = slice a 0:1;
+zout(a);
+
+@ Verify if slice makes a copy of depth 1;
+var array(array(int)) c = b;
+b = slice b 0:1;
+zout(b[0]);
+c[0][0] = 2;
+zout(b[0][0] == c[0][0]);
+
+@ Verify append
+append(2, a);
+zout(a);
+append(array(int){3}, b);
+zout(b);
+
+@ Testing pop
+pop(b);
+zout(b);
+pop(a);
+zout(a);
+
+@ Testing insert
+insert(0, 2, a);
+zout(a);
+insert(0, array(int){1, 4}, b);
+zout(b);
+
+@ Testing remove
+remove(0, a);
+zout(a);
+remove(1, b);
+zout(b);
+
+@ This should give an index error(runtime)
+b[-1];

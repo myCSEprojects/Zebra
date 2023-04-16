@@ -39,6 +39,7 @@ def execute(stream:str, resolverScopes: ResolverScopes, typecheckerScopes: Scope
         # print(programAST)
         # Resolving the AST
         pp = pprint.PrettyPrinter(indent=4)
+        # print(programAST)
         resolvedProgram = resolve(programAST, resolverScopes)
         # pp.pprint(resolvedProgram)
         # Performing typechecking

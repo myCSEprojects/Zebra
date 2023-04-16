@@ -86,7 +86,7 @@ class Parser:
         self.lexer.match(Operator(0, "("))
         bf = self.lexer.peek_token()
         initial = nil()
-        if(self.lexer.peek_token().val in dtypes):
+        if(self.lexer.peek_token().val == "var"):
             initial = self.parse_vardec()
         elif (bf.val == ";") :
             self.lexer.advance()
@@ -166,14 +166,10 @@ class Parser:
         self.lexer.match(Operator(0,"("))
         ele=self.parse_expr()
         self.lexer.match(Operator(0,","))
-        l=self.lexer.peek_token()
-        if not isinstance(l, Identifier):
-            ParseError(self, f"Expected an identifier", l.lineNumber)
-        self.lexer.advance()
-        var = Variable(l.lineNumber, l.val, generate_id())
+        l= self.parse_expr()
         self.lexer.match(Operator(0,")"))
         self.lexer.match(Operator(0,";"))
-        return array_append(lineNumber, ele, var)
+        return array_append(lineNumber, ele, l)
     
     def parse_remove(self):
         lineNumber = self.lexer.peek_token().lineNumber
@@ -218,14 +214,10 @@ class Parser:
         self.lexer.match(Operator(0,","))
         ele=self.parse_expr()
         self.lexer.match(Operator(0,","))
-        l=self.lexer.peek_token()
-        if not isinstance(l, Identifier):
-            ParseError(self, f"Expected an identifier", l.lineNumber)
-        self.lexer.advance()
-        var = Variable(l.lineNumber, l.val, generate_id())
+        l=self.parse_expr()
         self.lexer.match(Operator(0,")"))
         self.lexer.match(Operator(0,";"))
-        return array_insert(lineNumber, index, ele, var)
+        return array_insert(lineNumber, index, ele, l)
     
     def parse_expr_stmt(self):
         t = self.parse_expr()
@@ -236,6 +228,8 @@ class Parser:
         lineNumber = self.lexer.peek_token().lineNumber
         ast = self.parse_atom()
         while True:
+            
+            # Parsing function calls
             if self.lexer.peek_token().val == "(":
                 self.lexer.advance()
                 params = []
@@ -247,6 +241,7 @@ class Parser:
                 self.lexer.match(Operator(0,")"))
                 ast = FunCall(lineNumber, ast, params)
             
+            # Parsing member access
             elif self.lexer.peek_token().val == ".":
                 self.lexer.advance()
                 iden = self.lexer.peek_token()
@@ -254,14 +249,52 @@ class Parser:
                     ParseError(self, f"Expected an identifier", iden.lineNumber)
                 self.lexer.advance()
                 ast = Get(lineNumber, ast, iden.val)
+            
+            # Parsing indexing of arrays and strings
+            elif self.lexer.peek_token().val == "[":
+                self.lexer.advance()
+                index = self.parse_expr()
+                self.lexer.match(Operator(0,"]"))
+                ast = AtIndex(lineNumber, ast, index)
+            
             else:
                 break
+        
         return ast
             
-
+    def parse_array_type(self):
+        if self.lexer.peek_token().val != "array":
+            if self.lexer.peek_token().val in keywords:
+                ParseError(self, f"Expected an type or class name", self.lexer.peek_token().lineNumber)
+            match self.lexer.peek_token():
+                case Keyword(lineNumber, "int"):
+                    self.lexer.advance()
+                    return [Int]
+                case Keyword(lineNumber, "float"):
+                    self.lexer.advance()
+                    return [Float]
+                case Keyword(lineNumber, "string"):
+                    self.lexer.advance()
+                    return [String]
+                case Keyword(lineNumber, "boolean"):
+                    self.lexer.advance()
+                    return [Bool]
+            if self.lexer.peek_token().val in classList:
+                self.lexer.advance()
+                return instanceType(ClassObject(self.lexer.peek_token().val, {}, 0))
+            else:
+                ParseError(self, f"Expected a type or class name", self.lexer.peek_token().lineNumber)
+                
+        self.lexer.match(Keyword(0, "array"))
+        dtype = [zArray]
+        self.lexer.match(Operator(0, "("))
+        dtype += self.parse_array_type()
+        self.lexer.match(Operator(0, ")"))
+        return dtype
     
     def parse_atom(self):
         match self.lexer.peek_token():
+            
             case Identifier(lineNumber, name):
                 i = self.lexer.peek_token()
                 self.lexer.advance()
@@ -288,35 +321,42 @@ class Parser:
             case Integer(lineNumber, value):
                 self.lexer.advance()
                 return Int(value)
+            
             case Boolean(lineNumber, value):
                 self.lexer.advance()
                 return Bool(value)
+            
             case String(lineNumber, value):
                 self.lexer.advance()
                 return Str(value)
+            
             case Flt(lineNumber, value):
                 self.lexer.advance()
                 return Float(value)
+            
             case Operator(lineNumber, '('):
                 self.lexer.advance()
                 l = self.parse_expr()
                 self.lexer.match(Operator(0, ')'))
                 return l
-            case Operator(lineNumber, '['):
-                self.lexer.advance()
-                lst = zArray(None, [])
-                # Collecting expressions until we hit a ']'
-                while (self.lexer.peek_token().val != ']'):
-                    exp = self.parse_expr()
-                    lst.elements.append(exp)
-                    if (self.lexer.peek_token().val == ','):
+            
+            # Parsing an array
+            case Keyword(lineNumber, 'array'):
+                lst = zArray(lineNumber, nil, [])
+                # Collecting dtype
+                lst.dtype = self.parse_array_type()
+                self.lexer.match(Operator(0, '{'))
+                while self.lexer.peek_token().val != '}':
+                    lst.elements.append(self.parse_expr())
+                    if self.lexer.peek_token().val == ',':
                         self.lexer.advance()
-                    elif(self.lexer.peek_token().val != ']'):
-                        ParseError(self, f"Expected a \']\' or \',\'", self.lexer.peek_token().lineNumber)
-                self.lexer.advance()
+                    else:
+                        break
+                self.lexer.match(Operator(0, '}'))
                 return lst
-            case other:
-                ParseError(self, "Expected an Expression!", other.lineNumber)
+            
+            case other as o:
+                ParseError(self, f"Expected an Expression, but got {o.val}", other.lineNumber)
     
     def parse_unary(self):
         op = self.lexer.peek_token()
@@ -410,17 +450,32 @@ class Parser:
         return left
     
     def parse_assign(self):
+        # Parsing the left hand side of the assignment
         l = self.parse_logic_or()
+
+        # Verifying if its the assignment operator
         op = self.lexer.peek_token()
         if (op.val == "=") :
             self.lexer.advance()
+            # Parse the value of the rhs of the assignment
             t = self.parse_assign()
+
+            # Verify its a variable
             if isinstance(l, Variable):
                 return BinOp(op.lineNumber, op.val,l,t)
+            
+            # Verify if its a field of an instance
             elif isinstance(l, Get):
                 return Set(op.lineNumber, l.var, l.field, t)
+            
+            # Verify if its an array element
+            elif isinstance(l, AtIndex):
+                return SetAtIndex(op.lineNumber, l.var, l.index, t)
+
             else:
                 ParseError(self, "Expected an Identifier or field of instance.", l.lineNumber)
+        
+        # Returning the value of parse_logic_or
         return l
     
     def parse_expr(self):
@@ -452,43 +507,31 @@ class Parser:
             case _:
                 return self.parse_expr_stmt()
     
-    def set_array_type(self, dtypes, i, lst):
-        '''
-        Function to set the dtype of the zArray generated by parse_expr
-        '''
-        if (i > len(dtypes)):
-            raise Exception()
-        lst.dtype = dtypes[i]
-        for j in range(len(lst.elements)):
-            if (isinstance(lst.elements[j], zArray)):
-                self.set_array_type(dtypes, i+1, lst.elements[j])
-            elif (dtypes[i] == zArray):
-                raise Exception()
-    
-    def empty_array_type(self, dtypes, i):
-        '''
-        Function to initialize the empty zArray
-        '''
-        if (dtypes[i] != zArray):
-            lst = zArray(dtypes[i], [])
-        else:
-            lst = zArray(dtypes[i], self.empty_array_type(dtypes, i+1))
-        return lst
-    
     def parse_fundec(self):
+        
         lineNumber = self.lexer.peek_token().lineNumber
 
         self.lexer.match(Keyword(0,"func"))
 
         # Checking the return type of the function
         rt = self.lexer.peek_token()
-        if self.lexer.peek_token().val not in dtypes:
-            ParseError(self, f"Expected a data type but given {rt.val}", rt.lineNumber)
+        if rt.val not in dtypes and rt.val not in classList:
+            ParseError(self, f"Expected a data type or a class name but given {rt.val}", rt.lineNumber)
         
         # Assigning the return type of the function
         r = self.lexer.peek_token()
-        r_type = dtypes_dict[r.val]
-        self.lexer.advance()
+        
+        # Getting return type
+        if rt.val in dtypes:
+            if rt.val == "array":
+                r_type = arrayType(self.parse_array_type())
+            else:
+                r_type = dtypes_dict[r.val]
+                self.lexer.advance()
+        else:
+            r_type = instanceType(ClassObject(rt.val, {}, 0))
+            self.lexer.advance()
+        
         
         # Generating a Variable for the function
         f = self.lexer.peek_token()
@@ -505,12 +548,19 @@ class Parser:
             dt = self.lexer.peek_token()    # The data type of the parameter
             
             # Invalid Data Type for the parameter
-            if dt.val not in dtypes:
-                ParseError(self, f"Expected a data type but given {dt.val}", dt.lineNumber)
+            if dt.val not in dtypes and dt.val not in classList:
+                ParseError(self, f"Expected a data type or a class name but given {dt.val}", dt.lineNumber)
 
-            # Appending the data type to the params_type array
-            param_types.append(dtypes_dict[dt.val])
-            self.lexer.advance()
+            # Appending the data type to the params_type list
+            if dt.val in dtypes:
+                if dt.val == "array":
+                    param_types.append(arrayType(self.parse_array_type()))
+                else:
+                    param_types.append(dtypes_dict[dt.val])
+                    self.lexer.advance()
+            else:
+                param_types.append(instanceType(ClassObject(dt.val, {}, 0)))
+                self.lexer.advance()
 
             # Obtaining the parameter name and appending to the params array
             iden = self.lexer.peek_token()
@@ -532,6 +582,13 @@ class Parser:
         return DeclareFun(lineNumber, func , r_type, param_types, params, func_block, "FUNCTION")
     
     def parse_vardec(self):
+
+        # Matching the var keyword
+        self.lexer.match(Keyword(0, "var"))
+
+        if self.lexer.peek_token().val in classList:
+            return self.parse_instancedec()
+
         isConst=None # Variable indicating the constness of the variable
         
         # The l value
@@ -626,49 +683,68 @@ class Parser:
                     ParseError(self, "Expected an Identifier", l.lineNumber)
             
             case Keyword(lineNumber, "array"):
-                # Disallowing constant arrays
+                # Disallowing constant arrays, for now
                 if (isConst):
                     ParseError(self, "Cannot declare a array as const.", lineNumber)
                 
-                # Getting the data type of the array
-                dtypes_ = [] # Holds the actual data type array declared i.e., [zArray zArray Int]
-                self.lexer.advance()
-                while(self.lexer.peek_token().val == "array"):
-                    dtypes_.append(zArray)
+                # parsing the array dtype
+                dtype = arrayType(self.parse_array_type())
+
+                 # Getting the variable or the Get expr
+                var = self.parse_logic_or()
+
+                expr = nil()
+
+                # Checking if the variable is declared without an initial value
+                if(self.lexer.peek_token().val == "="):
                     self.lexer.advance()
-                dt = self.lexer.peek_token()
-                if (dt.val not in dtypes_dict):
-                    ParseError(self, "Expected data type.", dt.lineNumber)
-                dtypes_.append(dtypes_dict[dt.val])
-                self.lexer.advance()
+                    expr = self.parse_expr()
                 
-                iden = self.lexer.peek_token()
-                
-                # Verifying the identifier
-                if (not isinstance(iden, Identifier)):
-                    ParseError(self, "Expected Identifier.", iden.lineNumber)
-                self.lexer.advance()
-
-                # Creating the variable object
-                var = Variable(iden.lineNumber, iden.val, generate_id())
-
-                lst = nil()
-                if (self.lexer.peek_token().val == "="):
-                    self.lexer.advance()
-
-                    # Attaining the array from the initializer array
-                    lst = self.parse_expr()
-                    try:
-                        # Setting the array types as well as ensuring the array dimensions match
-                        self.set_array_type(dtypes_, 0, lst)
-                    except:
-                        # Raising the Dimension error
-                        ParseError(self, f"Dimensions of the given array and initializer array do not match", self.lexer.peek_token().lineNumber)
-                else:
-                    # Generating empty array
-                    lst = self.empty_array_type(dtypes_, 0)
                 self.lexer.match(Operator(0, ";"))
-                return Declare(lineNumber, var, lst, zArray, False)
+                
+                if (isinstance(var, Variable)):
+                    return Declare(lineNumber, var ,expr, dtype, isConst)
+                else:
+                    ParseError(self, "Expected an Identifier", l.lineNumber)
+                # # Getting the data type of the array
+                # dtypes_ = [] # Holds the actual data type array declared i.e., [zArray zArray Int]
+                # self.lexer.advance()
+                # while(self.lexer.peek_token().val == "array"):
+                #     dtypes_.append(zArray)
+                #     self.lexer.advance()
+                # dt = self.lexer.peek_token()
+                # if (dt.val not in dtypes_dict):
+                #     ParseError(self, "Expected data type.", dt.lineNumber)
+                # dtypes_.append(dtypes_dict[dt.val])
+                # self.lexer.advance()
+                
+                # iden = self.lexer.peek_token()
+                
+                # # Verifying the identifier
+                # if (not isinstance(iden, Identifier)):
+                #     ParseError(self, "Expected Identifier.", iden.lineNumber)
+                # self.lexer.advance()
+
+                # # Creating the variable object
+                # var = Variable(iden.lineNumber, iden.val, generate_id())
+
+                # lst = nil()
+                # if (self.lexer.peek_token().val == "="):
+                #     self.lexer.advance()
+
+                #     # Attaining the array from the initializer array
+                #     lst = self.parse_expr()
+                #     try:
+                #         # Setting the array types as well as ensuring the array dimensions match
+                #         self.set_array_type(dtypes_, 0, lst)
+                #     except:
+                #         # Raising the Dimension error
+                #         ParseError(self, f"Dimensions of the given array and initializer array do not match", self.lexer.peek_token().lineNumber)
+                # else:
+                #     # Generating empty array
+                #     lst = self.empty_array_type(dtypes_, 0)
+                # self.lexer.match(Operator(0, ";"))
+                # return Declare(lineNumber, var, lst, zArray, False)
             
 
             
@@ -677,9 +753,7 @@ class Parser:
             return self.parse_fundec()
         elif self.lexer.peek_token().val == "class" :
             return self.parse_classdec()
-        elif self.lexer.peek_token().val in classList :
-            return self.parse_instancedec()
-        elif(self.lexer.peek_token().val in dtypes):
+        elif self.lexer.peek_token().val == "var":
             return self.parse_vardec()
         else:
             return self.parse_statement()
@@ -724,16 +798,11 @@ class Parser:
                 stmts[funDec.var.name] = funDec
 
             # Parsing variable declarations
-            elif (self.lexer.peek_token().val in dtypes):
+            elif (self.lexer.peek_token().val == "var"):
                 varDec = self.parse_vardec()
                 if (varDec.var.name in stmts):
                     ParseError(self, f"Variable {varDec.var.name} already declared.", varDec.lineNumber)
                 stmts[varDec.var.name] = varDec
-            elif (self.lexer.peek_token().val in classList):
-                instDec = self.parse_instancedec()
-                if (instDec.var.name in stmts):
-                    ParseError(self, f"Variable {instDec.var.name} already declared.", instDec.lineNumber)
-                stmts[instDec.var.name] = instDec
             else:
                 ParseError(self, "Expected function or variable declaration.", self.lexer.peek_token().lineNumber)
 

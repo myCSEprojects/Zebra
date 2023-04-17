@@ -1,0 +1,18 @@
+func int Factorialdigitsum() {
+    var int product = 1;
+    for (var int i = 2; i <= 100; i=i+1) {
+        product = product*i;
+    }
+
+    var int digitsum = 0;
+    while (product != 0) {
+        digitsum = digitsum + product % 10;
+        product = product / 10;
+    }
+    return digitsum;
+
+}
+
+var int answer =  Factorialdigitsum();
+
+zout(answer);

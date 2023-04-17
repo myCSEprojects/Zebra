@@ -24,6 +24,27 @@ def test():
     if (Bool(False) != evaluate(BinOp(Operator(0, "&&"), Bool(False), Bool(True)))):
         print("Basic Logical and operator failed")
         return -1
+    
+    if (Bool(True) != evaluate(BinOp(Operator(0, "&&"), Bool(True), Bool(True)))):
+        print("Basic Logical and operator failed")
+        return -1
+    
+    if (Bool(False) != evaluate(BinOp(Operator(0, "&&"), Bool(False), Bool(False)))):
+        print("Basic Logical and operator failed")
+        return -1
+    
+    if (Bool(True) != evaluate(BinOp(Operator(0, "||"), Bool(False), Bool(True)))):
+        print("Basic Logical and operator failed")
+        return -1
+    
+    if (Bool(True) != evaluate(BinOp(Operator(0, "||"), Bool(True), Bool(True)))):
+        print("Basic Logical and operator failed")
+        return -1
+    
+    if (Bool(False) != evaluate(BinOp(Operator(0, "||"), Bool(False), Bool(False)))):
+        print("Basic Logical and operator failed")
+        return -1
+    
     # Checking for the handling of the zero division error
     try:
         evaluate(BinOp(Operator(0, "/"), Int(c), Int(0)))

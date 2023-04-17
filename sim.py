@@ -42,6 +42,7 @@ class Variable():
     lineNumber: int
     name: str
     id: int
+    localID: int
 
     def __repr__(self):
         return f"{self.name}::{self.id}"
@@ -507,7 +508,7 @@ def evaluate(program: AST, scopes: Scopes = None):
             return obj
         
         case This(lineNumber, id):
-            return scopes.getVariable(Variable(lineNumber, "this", id ))
+            return scopes.getVariable(Variable(lineNumber, "this", id, 0))
         
         case zArray(dtype, value) as arr:
             for i in range(len(arr.elements)):
@@ -790,7 +791,7 @@ def evaluate(program: AST, scopes: Scopes = None):
                     scopes.beginScope()
 
                     # Declaring the this variable
-                    scopes.declareVariable(Variable(lineNumber, "this", obj.zClass.thisID), obj, instanceType(obj.zClass), False)
+                    scopes.declareVariable(Variable(lineNumber, "this", obj.zClass.thisID, 0), obj, instanceType(obj.zClass), False)
 
                     # Declaring the function
                     evaluate(field, scopes)

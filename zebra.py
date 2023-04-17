@@ -5,7 +5,8 @@ from sim import *
 import pprint
 from error import *
 from resolver import *
-import time
+import time 
+from sim_BC import VM, codegen
 try:
     import readline
 except:
@@ -16,7 +17,7 @@ except:
 isError = False
 
 # Function definitions
-def executeFile(path: str):
+def executeFile(path: str, evaluation_time: bool = False, byte_code: bool = False):
     '''
     Executes the file at the given path
     '''
@@ -30,24 +31,46 @@ def executeFile(path: str):
         print(f"Specified file at {path} does not exist!")
         exit(-1)
     
-    execute(stream, ResolverScopes(), Scopes(), Scopes())
+    execute(stream, ResolverScopes(), Scopes(), Scopes(), evaluation_time, byte_code)
 
-def execute(stream:str, resolverScopes: ResolverScopes, typecheckerScopes: Scopes, scopes: Scopes):
+def execute(stream:str, resolverScopes: ResolverScopes, typecheckerScopes: Scopes, scopes: Scopes, evaluation_time: bool = False, byte_code: bool = False):
     global isError
     try: 
-        programAST = parse(stream) 
-        
-        # print(programAST)
-        # Resolving the AST
+        programAST = parse(stream)
+
         pp = pprint.PrettyPrinter(indent=4)
-        # print(programAST)
+
         resolvedProgram = resolve(programAST, resolverScopes)
-        # pp.pprint(resolvedProgram)
-        # Performing typechecking
+
         typecheckAST(resolvedProgram, typecheckerScopes) # any TypecheckError in the stream would be caught in the typecheckAST function and the error flag would be set
-        output = evaluate(resolvedProgram, scopes)
-        return output
+            
+        if not byte_code:
+
+            if evaluation_time:
+                start = time.time()
+            
+            # Evaluating using tree walk
+            output = evaluate(resolvedProgram, scopes)
+            
+            if evaluation_time:
+                end = time.time()
+                print("Evaluation time: ", end - start)
+            
+            return output
         
+        else:
+            if evaluation_time:
+                start = time.time()
+            
+            # Evaluating using bytecode
+            vm = VM()
+            bytecode = codegen(resolvedProgram)
+            vm.load(bytecode)
+            output = vm.execute()
+            
+            if evaluation_time:
+                end = time.time()
+                print("Evaluation time: ", end - start)      
     
     except (RuntimeException, TypeCheckException, ParseException, ResolveException, RecursionError) as e:
         isError = True
@@ -57,7 +80,7 @@ def execute(stream:str, resolverScopes: ResolverScopes, typecheckerScopes: Scope
         # An uncaught expression for development purpose (Due to unhandled cases in the parser)
         raise e
 
-def interactiveShell():
+def interactiveShell(evaluation_time: bool = False, byte_code: bool = False):
     '''
     Run the lanuage in interactive shell form
     '''
@@ -96,7 +119,7 @@ def interactiveShell():
                 break
             
             # Executing the lines
-            output = execute(lines, resolverScopes, typecheckerScopes, scopes)
+            output = execute(lines, resolverScopes, typecheckerScopes, scopes, evaluation_time, byte_code)
             
             # Printing new line after each line
             print()
@@ -108,18 +131,16 @@ def interactiveShell():
 
 if __name__ == "__main__":
     
-    args = sys.argv
-
-    n = len(args)
-
-    if (n > 2):
-        # Error (Invalid arguments provided)
-        print("Invalid Number of arguments")
-        exit(-1)
-
-    elif (n == 2):
-        # Runninng the given script
-        executeFile(args[1])
+    import argparse
+ 
+    parser = argparse.ArgumentParser(description ='Main zebra interpreter')
+    
+    parser.add_argument('filename', nargs='?')                                           # positional argument
+    parser.add_argument('-et', '--evaluation_time', action="store_true")      # option that takes a value
+    parser.add_argument('-bc', '--byte_code', action='store_true')
+    args = parser.parse_args()
+    
+    if args.filename:
+        executeFile(args.filename, args.evaluation_time, args.byte_code)
     else:
-        # Running the interactive shell
-        interactiveShell()
+        interactiveShell(args.evaluation_time, args.byte_code)

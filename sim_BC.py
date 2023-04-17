@@ -3,131 +3,7 @@ from fractions import Fraction
 from typing import Union, Optional, List, Dict
 from lexer import Keyword, Operator, Identifier
 from error import RuntimeError, typeCheckError, resolveError
-
-# @dataclass
-# class metadata:
-#     '''
-#     Class to store the meta data of the AST
-#     '''
-#     lineNumber: int
-@dataclass(frozen=True)
-class Variable():
-    '''
-    Variable class containing the name of the variable
-    '''
-    lineNumber: int
-    name: str
-    id: int
-    localID: int
-    def __init__(self, name):
-        self.name = name
-        self.id = self.localID = None
-
-    def __repr__(self):
-        return f"{self.name}::{self.id}::{self.localID}"
-
-# Basic Data Types
-@dataclass
-class nil():
-    pass
-@dataclass
-class Int():
-   '''
-   Class representing the integers in the language
-   '''
-   value: int
-
-@dataclass
-class Float():
-    '''
-    Floating objects represented as Fractions in python
-    '''
-    value: Fraction
-    def __init__(self, value):
-        self.value = Fraction(value)
-
-@dataclass
-class Bool():
-    '''
-    Seperate boolean class representing two types of values True and False
-    '''
-    value: bool
-    @staticmethod
-    def truthy(checking):
-        if(checking == Int(0) or checking == Str("") or checking == Float(0) or checking == nil() or checking == Bool(False)):
-            return Bool(False)
-        else:
-            return Bool(True)
-
-@dataclass
-class Str() :
-    value: str
-
-
-@dataclass
-class BinOp():
-    '''
-    Variable evaluting to the value of the binary operation
-    '''
-    operator: str
-    firstOperand: 'AST'
-    secondOperand: 'AST'
-
-    def implicitIntToFloat(firstOperand, secondOperand):
-        '''
-        Function to take of the implicit conversion of the both operands to Float if either of them is a Float
-        '''
-        if (isinstance(firstOperand, Float) or isinstance(secondOperand, Float)):
-            if (isinstance(firstOperand, Int)):
-                firstOperand = Float(firstOperand.value)
-            elif (isinstance(secondOperand, Int)):
-                secondOperand = Float(secondOperand.value)
-        return firstOperand, secondOperand
-
-
-@dataclass
-class UnOp():
-    '''
-    Variable evaluating to the value of the unary operation 
-    '''
-    operator: str
-    operand: 'AST'
-
-@dataclass
-class PRINT():
-    print_stmt: List['AST']
-    sep: Optional[str]=Str(' ')
-    end: Optional[str]=Str('\n')
-    
-@dataclass
-class Seq:
-    lines: List['AST']
-
-
-@dataclass
-class For():
-    initial : 'AST'
-    condition : 'AST'
-    block: 'AST'
-
-
-@dataclass
-class If():
-    '''
-    If class evaluates to Bool
-    '''
-    condition: 'AST'
-    ifBlock: 'AST'
-    elseBlock: 'AST'
-
-@dataclass
-class While():
-    '''
-    while loop
-    '''
-    condition: 'AST'
-    block: 'AST'
-   
+from sim import Variable, nil, Int, Float, Bool, Str, BinOp, UnOp, PRINT, Seq, For,If, While, Declare, zArray, Block, array_append, array_insert, array_len, array_pop, array_remove, AtIndex, SetAtIndex
 
 # Defined binary operators in the Language
 BINARY_OPERATORS = [
@@ -208,6 +84,10 @@ class I:
     @dataclass
     class NEQ:
         pass
+    
+    @dataclass
+    class APPEND:
+        pass
 
     @dataclass
     class LT:
@@ -256,12 +136,26 @@ class I:
         end: Optional[str]=Str('\n')
 
     @dataclass
+    class ASSIGN:
+        localID: int
+        dtype: type
+        isConst: bool
+
+    @dataclass
     class LOAD:
         localID: int
 
     @dataclass
     class STORE:
         localID: int
+    
+    @dataclass
+    class ATINDEX:
+        pass
+
+    @dataclass
+    class SETATINDEX:
+        pass
 
     @dataclass
     class HALT:
@@ -295,6 +189,9 @@ Instruction = (
     | I.LSHIFT
     | I.RSHIFT
     | I.PRINT
+    | I.APPEND
+    | I.ATINDEX
+    | I.SETATINDEX
 )
 
 @dataclass
@@ -469,22 +366,17 @@ class VM:
                     firstOperand = self.data.pop()
                     self.data.append(Bool(firstOperand.value >= secondOperand.value))
                     self.ip += 1
-                case I.ASSIGN():
-                    secondOperand = self.data.pop()
-                    firstOperand = self.data.pop()
-                    self.data.append(Bool(firstOperand.value >= secondOperand.value))
-                    self.ip += 1
                 case I.JMP(label):
                     self.ip = label.target
                 case I.JMP_IF_FALSE(label):
                     op = self.data.pop()
-                    if not op:
-                        self.ip = label.target
+                    if not op.value:
+                        self.ip = label.target 
                     else:
                         self.ip += 1
                 case I.JMP_IF_TRUE(label):
                     op = self.data.pop()
-                    if op:
+                    if op.value:
                         self.ip = label.target
                     else:
                         self.ip += 1
@@ -504,17 +396,41 @@ class VM:
                 case I.PRINT(sep, end):
                     p=self.data.pop()
                     if(sep is not None):
-                        print(p.value, end=sep.value)
+                        print(p, end=sep.value)
                     elif(end is not None):
-                        print(p.value, end=end.value)
+                        print(p, end=end.value)
                     self.ip+=1
                 case I.LOAD(localID):
-                    self.data.append(self.currentFrame.locals[localID])
+                    self.data.append(self.currentFrame.locals[localID][0])
                     self.ip += 1
                 case I.STORE(localID):
                     v = self.data.pop()
-                    self.currentFrame.locals[localID] = v
+                    self.currentFrame.locals[localID][0] = v
                     self.ip += 1
+                case I.ASSIGN(localID, dtype, isConst):
+                    v=self.data.pop()
+                    self.currentFrame.locals[localID]=[v,dtype,isConst]
+                    self.ip+=1
+                
+                case I.APPEND():
+                    secondOperand = self.data.pop()
+                    firstOperand = self.data.pop()
+                    secondOperand.elements.append(firstOperand)
+                    self.ip += 1
+                
+                case I.ATINDEX():
+                    arr = self.data.pop()
+                    index = self.data.pop()
+                    self.data.append(arr.elements[index.value])
+                    self.ip += 1
+
+                case I.SETATINDEX():
+                    arr = self.data.pop()
+                    index = self.data.pop()
+                    value = self.data.pop()
+                    arr.elements[index.value] = value
+                    self.ip += 1
+
                 case I.HALT():
                     return self.data.pop()
 
@@ -541,7 +457,7 @@ def generate_codegen (program: AST, code: ByteCode) -> None:
         ">": I.GT(),
         "<=": I.LE(),
         ">=": I.GE(),
-        "=": I.EQ(),
+        "==": I.EQ(),
         "!=": I.NEQ(),
         "~": I.NOT(),
         ">>": I.RSHIFT(),
@@ -559,13 +475,15 @@ def generate_codegen (program: AST, code: ByteCode) -> None:
             code.emit(I.LOAD(v.localID))
         case Int(value) | Bool(value) | Str(value) | Float(value) as v:
             code.emit(I.PUSH(v))
+        case zArray() as arr:
+            code.emit(I.PUSH(arr))            
         case nil():
-            code.emit(I.PUSH(None))
-        case BinOp(op, firstOperand, secondOperand) if op in binary_operators:
+            code.emit(I.PUSH(nil()))
+        case BinOp(lineNumber, op, firstOperand, secondOperand) if op in binary_operators:
             codegen_(firstOperand)
             codegen_(secondOperand)
             code.emit(binary_operators[op])
-        case BinOp("&&", firstOperand, secondOperand):
+        case BinOp(lineNumber, "&&", firstOperand, secondOperand):
             E = code.label()
             codegen_(firstOperand)
             code.emit(I.DUP())
@@ -573,7 +491,7 @@ def generate_codegen (program: AST, code: ByteCode) -> None:
             code.emit(I.POP())
             codegen_(secondOperand)
             code.emit_label(E)
-        case BinOp("||", firstOperand, secondOperand):
+        case BinOp(lineNumber, "||", firstOperand, secondOperand):
             E = code.label()
             codegen_(firstOperand)
             code.emit(I.DUP())
@@ -581,17 +499,31 @@ def generate_codegen (program: AST, code: ByteCode) -> None:
             code.emit(I.POP())
             codegen_(secondOperand)
             code.emit_label(E)
-        case UnOp(op, operand) if op in unary_operators:
+        case BinOp(lineNumber, "=", firstOperand, secondOperand):
+            codegen_(secondOperand)
+            code.emit(I.STORE(firstOperand.localID))
+            code.emit(I.PUSH(nil()))
+
+        case Block(blockStatements):
+            codegen_(blockStatements)
+            
+        case UnOp(lineNumber, op, operand) if op in unary_operators:
             codegen_(operand)
             code.emit(unary_operators[op])
+        
         case Seq(lines):
-            if not lines: raise RuntimeError()
-            last, rest = lines[-1], lines[:-1]
-            for line in rest:
-                codegen_(line)
-                code.emit(I.POP())
-            codegen_(last)
-        case If(condition, ifBlock, elseBlock):
+            if len(lines) == 0:
+                code.emit(I.PUSH(nil()))
+            elif len(lines) == 1:
+                codegen_(lines[0])
+            else:
+                last, rest = lines[-1], lines[:-1]
+                for line in rest:
+                    codegen_(line)
+                    code.emit(I.POP())
+                codegen_(last)
+        
+        case If(lineNumber, condition, ifBlock, elseBlock):
             E = code.label()
             F = code.label()
             codegen_(condition)
@@ -601,7 +533,7 @@ def generate_codegen (program: AST, code: ByteCode) -> None:
             code.emit_label(F)
             codegen_(elseBlock)
             code.emit_label(E)
-        case While(condition, block):
+        case While(lineNumber, condition, block):
             B = code.label()
             E = code.label()
             code.emit_label(B)
@@ -611,8 +543,9 @@ def generate_codegen (program: AST, code: ByteCode) -> None:
             code.emit(I.POP())
             code.emit(I.JMP(B))
             code.emit_label(E)
-            code.emit(I.PUSH(None))
-        case For(initial, condition, block):
+            code.emit(I.PUSH(nil()))
+        
+        case For(lineNumber, initial, condition, block):
             B = code.label()
             E = code.label()
             codegen_(initial)
@@ -623,17 +556,36 @@ def generate_codegen (program: AST, code: ByteCode) -> None:
             code.emit(I.POP())
             code.emit(I.JMP(B))
             code.emit_label(E)
-            code.emit(I.PUSH(None))
+            code.emit(I.PUSH(nil()))
 
-        case PRINT(print_stmt, sep, end):
+        case PRINT(lineNumber, print_stmt, sep, end):
             last, rest = print_stmt[-1], print_stmt[:-1]
             for stmt in (rest):
                 codegen_(stmt)
                 code.emit(I.PRINT(sep))
             codegen_(last)
             code.emit(I.PRINT(end))
-            code.emit(I.PUSH(None))
+            code.emit(I.PUSH(nil()))
 
+        case Declare(lineNumber, var, value, dtype, isConst):
+            codegen_(value)
+            code.emit(I.ASSIGN(var.localID, dtype, isConst))
+            code.emit(I.PUSH(nil()))
+        case array_append(lineNumber, element, array_name):
+            codegen_(element)
+            codegen_(array_name)
+            code.emit(I.APPEND())
+            code.emit(I.PUSH(nil()))
+        case AtIndex(lineNumber, var, index):
+            codegen_(index)
+            codegen_(var)
+            code.emit(I.ATINDEX())
+        case SetAtIndex(lineNumber, var, index, value):
+            codegen_(value)
+            codegen_(index)
+            codegen_(var)
+            code.emit(I.SETATINDEX())
+            code.emit(I.PUSH(nil()))
         # Handling unknown expressions
         case _ as v:
             raise Exception(f"Got {v}, Expression|Statement Invalid")

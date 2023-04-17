@@ -1,6 +1,7 @@
-var array(int) a = array(int) {1,2,3};
-
-var array(int) b = a + array(int){};
-a[0] = 5;
-
-zout(b);
+var array(int) a = array(int){1,2,3};
+zout(a);
+append(1, a);
+zout(a);
+zout(a[0]);
+a[0] = 20;
+zout(a[0]);

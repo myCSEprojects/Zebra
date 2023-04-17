@@ -109,7 +109,7 @@ def typecheck(program: AST, scopes = None):
             return Str
         
         case This(lineNumber, id):
-            return scopes.getVariableType(Variable(lineNumber, "this", id))
+            return scopes.getVariableType(Variable(lineNumber, "this", id, 0))
 
         case nil():
             return nil
@@ -568,7 +568,7 @@ def typecheck(program: AST, scopes = None):
             scopes.beginScope()
             
             # Declaring a dummy this variable
-            scopes.declareVariable(Variable(lineNumber, "this", thisID), InstanceObject(classObj, {}), instanceType(classObj), False)
+            scopes.declareVariable(Variable(lineNumber, "this", thisID, 0), InstanceObject(classObj, {}), instanceType(classObj), False)
 
             for stmt in stmts:
                 stmt = stmts[stmt]
@@ -579,7 +579,7 @@ def typecheck(program: AST, scopes = None):
                         value = createDummyObject(value)
                     if ((not isinstance(stmt.dtype, type)) and isinstance(stmt.dtype, instanceType)):
                         stmt.dtype = instanceType(scopes.getVariable(stmt.dtype.name))
-                    scopes.getVariable(Variable(lineNumber, "this", thisID)).fields[stmt.var.name] = [value , stmt.dtype, stmt.isConst]
+                    scopes.getVariable(Variable(lineNumber, "this", thisID, 0)).fields[stmt.var.name] = [value , stmt.dtype, stmt.isConst]
                 elif isinstance(stmt, DeclareFun):
                     typecheck(stmt, scopes)
                 else:
@@ -612,7 +612,7 @@ def typecheck(program: AST, scopes = None):
                         scopes.beginScope()
 
                         # Declaring the this variable
-                        scopes.declareVariable(Variable(lineNumber, "this", classObj.thisID), nil(), instanceType(classObj), False)
+                        scopes.declareVariable(Variable(lineNumber, "this", classObj.thisID, 0), nil(), instanceType(classObj), False)
 
                         # Declaring the function
                         scopes.declareFun(field.var, FnObject(field.functionType, field.params_type, field.params, field.body, field.return_type))

@@ -181,7 +181,7 @@ class Parser:
         if not isinstance(l, Identifier):
             ParseError(self, f"Expected an identifier", l.lineNumber)
         self.lexer.advance()
-        var = Variable(l.lineNumber, l.val, generate_id())
+        var = Variable(l.lineNumber, l.val, generate_id(), 0)
         self.lexer.match(Operator(0,")"))
         self.lexer.match(Operator(0,";"))
         return array_remove(lineNumber, index, var)
@@ -203,7 +203,7 @@ class Parser:
         self.lexer.advance()
         self.lexer.match(Operator(0,")"))
         self.lexer.match(Operator(0,";"))
-        var = Variable(l.lineNumber, l.val, generate_id())
+        var = Variable(l.lineNumber, l.val, generate_id(), 0)
         return array_pop(l.lineNumber, var)
     
     def parse_insert(self):
@@ -298,7 +298,7 @@ class Parser:
             case Identifier(lineNumber, name):
                 i = self.lexer.peek_token()
                 self.lexer.advance()
-                return Variable(lineNumber, name, generate_id())
+                return Variable(lineNumber, name, generate_id(), 0)
                 
             case Keyword(lineNumber, "slice"):
                 self.lexer.advance()
@@ -539,7 +539,7 @@ class Parser:
         
         # Generating a Variable for the function
         f = self.lexer.peek_token()
-        func = Variable(f.lineNumber, f.val, generate_id())
+        func = Variable(f.lineNumber, f.val, generate_id(), 0)
         self.lexer.advance()
 
         # Checking for the "("
@@ -569,7 +569,7 @@ class Parser:
             # Obtaining the parameter name and appending to the params array
             iden = self.lexer.peek_token()
             self.lexer.advance()
-            params.append(Variable(iden.lineNumber, iden.val, generate_id()))
+            params.append(Variable(iden.lineNumber, iden.val, generate_id(), 0))
 
             # Checking for the "," if there are more parameters
             if self.lexer.peek_token().val == ',':
@@ -769,7 +769,7 @@ class Parser:
         iden = self.lexer.peek_token()
         if (not isinstance(iden, Identifier)):
             ParseError(self, "Expected Identifier.", iden.lineNumber)
-        var = Variable(iden.lineNumber, iden.val, generate_id())
+        var = Variable(iden.lineNumber, iden.val, generate_id(), 0)
         self.lexer.advance()
         if self.lexer.peek_token().val == "=":
             self.lexer.advance()
@@ -787,7 +787,7 @@ class Parser:
             ParseError(self, "Expected Identifier.", iden.lineNumber)
         # Adding the class name to the classList
         classList.append(iden.val)
-        var = Variable(iden.lineNumber, iden.val, generate_id())
+        var = Variable(iden.lineNumber, iden.val, generate_id(), 0)
         self.lexer.advance()
         self.lexer.match(Operator(0, "{"))
         stmts={}

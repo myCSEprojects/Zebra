@@ -1,63 +1,53 @@
-var int l = 100;
+var int l = 1000000;
 var array(int) a=array(int){};
 var int mem = 1000000;
 
 for(var int i=0;i<mem;i=i+1){
-    
     append(0,a);
 }
 
-func int longestCollatz() {
-    var int maxChainLength = 0;
-    var int result = 0;
-    
-    
-    for (var int i = 1; i < l; i=i+1) {
-        var int n = i;
-        var int chainLength = 1;
-        
-        var int flag = 0;
+var int maxChainLength = 0;
+var int result = 0;
+var int n = nil;
+var int chainLength = nil;
+var int flag = 0;
 
-        while (n > 1) 
-        {
-            
-           
-            if (n<mem){
-                if (a[n]!=0){
-                    chainLength = chainLength + a[n] -1;
-                    flag = 1;
-                    
-                    n = 0;
-                }
-            }
-            
-            if (flag ==0){
+for (var int i = 1; i < l; i=i+1) {
+    n = i;
+    chainLength = 1;
+    flag = 0;
 
-                if (n % 2 == 0) {
-                    n = n//2;
-
-                } 
-                else {
-                    n = 3 * n + 1;
-                }
-                chainLength = chainLength + 1;
+    while (n > 1) 
+    {
+        if (n<mem){
+            if (a[n]!=0){
+                chainLength = chainLength + a[n] -1;
+                flag = 1;
+                
+                n = 0;
             }
         }
         
-        if (chainLength > maxChainLength) {
-            maxChainLength = chainLength;
-            result = i;
-        }
-        if (i<mem) {a[i]=chainLength;}
-        
-        
+        if (flag ==0){
 
-    
+            if (n % 2 == 0) {
+                n = n//2;
+
+            } 
+            else {
+                n = 3 * n + 1;
+            }
+            chainLength = chainLength + 1;
+        }
     }
-    return result;
     
+    if (chainLength > maxChainLength) {
+        maxChainLength = chainLength;
+        result = i;
+    }
+    if (i<mem) {a[i]=chainLength;}
 }
 
-var int answer = longestCollatz();
 
-zout(answer);
+zout("result", result);
+zout("len", maxChainLength);

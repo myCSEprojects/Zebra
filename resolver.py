@@ -6,13 +6,22 @@ class ResolverScopes:
     Scopes storing the stack of environments
     '''
     stack: List[Dict[Variable, "AST"]]
+    localIDStack: List[int]
 
     def __init__(self, stack: List[Dict[Variable, "AST"]] = None):
         if (stack == None):
             self.stack = [dict()]
+            self.localIDStack = [0]
         else:
             self.stack = stack
+            self.localIDStack = [0]
     
+    def beginFun(self):
+        self.localIDStack.append(0)
+    
+    def endFun(self):
+        self.localIDStack.pop()
+
     def beginScope(self):
         self.stack.append({})
     
@@ -29,7 +38,10 @@ class ResolverScopes:
         # Avoiding redeclarations in the same scope
         if name in self.stack[-1]:
             resolveError(f"Redeclaring already declared function {name}", var.lineNumber)
-        self.stack[-1][name] = var  
+        newVar = Variable(var.lineNumber,var.name, var.id, self.localIDStack[-1])
+        self.localIDStack[-1] += 1
+        self.stack[-1][name] = newVar
+        return newVar
 
     def declareVariable(self, name: str, var: Variable):
         '''
@@ -40,8 +52,10 @@ class ResolverScopes:
         # Avoiding redeclaration in the same scope
         if name in self.stack[-1]:
             resolveError(f"Redeclaring already declared variable {name}", var.lineNumber)
-        
-        self.stack[-1][name] = var
+        newVar = Variable(var.lineNumber,var.name, var.id, self.localIDStack[-1])
+        self.localIDStack[-1] += 1
+        self.stack[-1][name] = newVar  
+        return newVar
 
 
     def getVariable(self, name: str, lineNumber: int):
@@ -75,46 +89,46 @@ def resolve(program: AST, scopes : ResolverScopes = None):
             # Getting the resolved variable
             referencingVariable = scopes.getVariable(name, lineNumber)
             # Setting the exact line number of the variable
-            resolvedVariable = Variable(lineNumber, name, referencingVariable.id)
+            resolvedVariable = Variable(lineNumber, name, referencingVariable.id, referencingVariable.localID)
             return resolvedVariable
         
         case Declare(lineNumber, var, value, dtype, isConst):
             # Resolving the value
             resolvedValue = resolve(value, scopes)
             # Declaring the variable
-            scopes.declareVariable(var.name, var)
+            newVar = scopes.declareVariable(var.name, var)
             # Resolving the data type
             if ((not isinstance(dtype, type)) and isinstance(dtype, instanceType)):
                 dtype = instanceType(scopes.getVariable(dtype.name.name, lineNumber))
-            return Declare(lineNumber, var, resolvedValue, dtype, isConst)
+            return Declare(lineNumber, newVar, resolvedValue, dtype, isConst)
         
         case DeclareClass(lineNumber, var, stmts, thisID):
             # Declaring the class
-            scopes.declareVariable(var.name, var)
+            newVar = scopes.declareVariable(var.name, var)
             # Resolving the statements
             scopes.beginScope()
             # Declaring the this variable
-            scopes.declareVariable("this", Variable(lineNumber, "this", thisID))
+            scopes.declareVariable("this", Variable(lineNumber, "this", thisID, 0))
             for methodName in stmts:
                 
                 stmts[methodName] = resolve(stmts[methodName], scopes)
             scopes.endScope()
-            return DeclareClass(lineNumber, var, stmts, thisID)
+            return DeclareClass(lineNumber, newVar , stmts, thisID)
 
         case DeclareFun(lineNumber, var, return_type, params_type, params, body, function_type):
             # Declaring the function
-            scopes.declareFun(var.name, var, FnObject(function_type, return_type, params_type, params, body))
+            newVar = scopes.declareFun(var.name, var, FnObject(function_type, return_type, params_type, params, body))
             scopes.beginScope()
             # Declaring the parameters
             for param in params:
-                scopes.declareVariable(param.name, param)
+                param = scopes.declareVariable(param.name, param)
             for i in range(len(params_type)):
                 if ((not isinstance(params_type[i], type)) and isinstance(params_type[i], instanceType)):
                     params_type[i] = instanceType(scopes.getVariable(params_type[i].name.name, lineNumber))
             # Resolving the body
             resolvedBody = resolve(body, scopes)
             scopes.endScope()
-            return DeclareFun(lineNumber, var, return_type, params_type, params, resolvedBody, function_type)
+            return DeclareFun(lineNumber, newVar, return_type, params_type, params, resolvedBody, function_type)
         
         case Get(lineNumber, var, name):
             resolvedVar = resolve(var, scopes)

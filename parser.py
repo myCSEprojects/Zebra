@@ -368,14 +368,14 @@ class Parser:
             self.lexer.advance()
             right = self.parse_unary()
             return UnOp(op.lineNumber, op.val,right)
-        elif (op.val == "length"):
+        elif (isinstance(op,Keyword) and op.val == "length"):
             return self.parse_len()
         return self.parse_call()
     
     def parse_power(self):
         left = self.parse_unary()
         op = self.lexer.peek_token()
-        if(op.val == "^"):
+        if(isinstance(op, Operator) and op.val == "^"):
             self.lexer.advance()
             right = self.parse_power()
             return BinOp(op.lineNumber, op.val,left, right)
@@ -459,7 +459,7 @@ class Parser:
 
         # Verifying if its the assignment operator
         op = self.lexer.peek_token()
-        if (op.val == "=") :
+        if (isinstance(op, Operator) and op.val == "=") :
             self.lexer.advance()
             # Parse the value of the rhs of the assignment
             t = self.parse_assign()

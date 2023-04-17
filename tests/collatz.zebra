@@ -1,4 +1,4 @@
-var int l = 100000;
+var int l = 100;
 var array(int) a=array(int){};
 var int mem = 1000000;
 

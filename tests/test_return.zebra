@@ -1,0 +1,13 @@
+func boolean anything(int n){
+    for(var int i = 1;i<n;i=i+1){
+        zout(i);
+        if (i%2 == 0){
+            return false;
+        }
+    }
+    return true;
+}
+
+var boolean a = anything(5);
+
+zout(a);

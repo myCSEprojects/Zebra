@@ -1,0 +1,5 @@
+var int a = nil;
+var float b = nil;
+var string c = nil;
+
+zout(a,b,c);

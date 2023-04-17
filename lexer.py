@@ -12,7 +12,7 @@ class Stream:
     pos: int
 
     def from_string(s):
-        return Stream(s, 0)
+        return Stream(bytes(s, 'utf-8').decode('unicode-escape'), 0)
 
     def next_char(self):
         if self.pos >= len(self.source):
@@ -69,11 +69,13 @@ Integer | Boolean | Keyword | Identifier | Operator | Flt
 class EndOfTokens(Exception):
     pass
 
-keywords = "if else while for zout list append remove length insert func slice index".split()
-dtypes = "int float string boolean const list".split()
-symbolic_operators = "+ - * / < > ! = ; { } ( ) [ ] , ~ % & | ~ @ ^ :".split()
+keywords = "if else while for zout array append remove length insert func slice index end sep pop return class this".split()
+dtypes = "int float string boolean const array".split()
+symbolic_operators = "+ - * / < > ! = ; { } ( ) [ ] , ~ % & | ~ ^ : .".split()
 str_denote = ["'",'"']
 whitespace = " \t\n"
+line_cmt = "@"
+multiline_cmt = "$"
 
 def word_to_token(lineNumber, word):
     if (word in keywords) or (word in dtypes):
@@ -88,7 +90,7 @@ def word_to_token(lineNumber, word):
 class Lexer:
     stream: Stream
     save: Token = None
-    lineNumber = 0
+    lineNumber = 1
     
     def synchronize(self):
         '''
@@ -114,7 +116,7 @@ class Lexer:
                         while True:
                             try:
                                 c = self.stream.next_char()
-                                if ((s=="!" or s=="<" or s==">") and c == "=") or (c==s and (s==">" or s=="<" or s=="=" or s=="&" or s=="|" or s == "/")):
+                                if ((s=="!" or s=="<" or s==">") and c == "=") or (c==s and (s==">" or s=="<" or s=="=" or s=="&" or s=="|" or s=="/")):
                                     s = s + str(c) 
                                     return(Operator(self.lineNumber,s))
                                 else:
@@ -137,7 +139,30 @@ class Lexer:
                                 s = s+str(c)
 
                         except:
-                            raise Exception("String not closed")                           
+                            raise Exception("String not closed")      
+
+                case c if (c == line_cmt):
+                    while True:
+                          try:
+                              c = self.stream.next_char()
+                              if (c == "\n"):
+                                  self.lineNumber += 1
+                                  return self.next_token()
+                              
+                          except:
+                              self.lineNumber += 1
+                              return self.next_token()
+                
+                case c if (c == multiline_cmt):
+                    while True:
+                            try:
+                                c = self.stream.next_char()
+                                if (c == multiline_cmt):
+                                    self.lineNumber += 1
+                                    return self.next_token()
+                            
+                            except:
+                                raise Exception("Comment not closed")
 
                 case c if c.isdigit():
                     n = int(c)
@@ -229,4 +254,3 @@ class Lexer:
             return self.next_token()
         except EndOfTokens:
             raise StopIteration
-

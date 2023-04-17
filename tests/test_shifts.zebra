@@ -1,0 +1,4 @@
+var int a = 8 << 1;
+zout(a);
+var int b = 8 >> 1;
+zout(b);

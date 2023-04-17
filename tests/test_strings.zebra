@@ -1,0 +1,12 @@
+var string ma="Fasak Ayyindi";
+zout(length(ma));
+var string sayhi = " Hi";
+var string mama=ma+sayhi;
+zout(length(mama));
+var string mamama=ma+" Bye";
+zout(length(mamama));
+ma=ma+" Good Bye";
+zout(ma);
+var string r=slice ma 2:3;
+zout(r);
+zout(ma[1]);

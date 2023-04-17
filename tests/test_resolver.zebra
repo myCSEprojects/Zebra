@@ -1,0 +1,10 @@
+var int a = 1;
+
+func int fib(int n){
+    return n + a;
+}
+
+{
+    var int a = 2;
+    zout(fib(2));
+}

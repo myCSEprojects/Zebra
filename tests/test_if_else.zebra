@@ -1,6 +1,6 @@
-int i =0;
-int j =10;
-int k =11;
+var int i =0;
+var int j =10;
+var int k =11;
 
 if (i ==1 ){
   zout(i);

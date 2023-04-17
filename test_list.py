@@ -2,26 +2,26 @@ from sim import *
 from typechecking import typecheck
 def test():
     x = Identifier(4, "x")
-    if (evaluate(Seq([Declare(x, zList(Int, [Int(1)]),zList, False), list_append(Int(2), x), BinOp(Operator(0, "="),Variable('x'), Variable('x'))]))).elements[1] != Int(2):
-        print("Basic evaluation of list_append failed")
+    if (evaluate(Seq([Declare(x, zArray(Int, [Int(1)]),zArray, False), array_append(Int(2), x), BinOp(Operator(0, "="),Variable('x'), Variable('x'))]))).elements[1] != Int(2):
+        print("Basic evaluation of array_append failed")
         return -1
-    if (evaluate(Seq([Declare(x, zList(Int, [Int(1)]),zList, False), list_append(Int(2), x), list_remove(Int(1),x)]))) != Int(2):
-        print("Basic evaluation of list_remove failed")
+    if (evaluate(Seq([Declare(x, zArray(Int, [Int(1)]),zArray, False), array_append(Int(2), x), array_remove(Int(1),x)]))) != Int(2):
+        print("Basic evaluation of array_remove failed")
         return -1
-    if (evaluate(Seq([Declare(x, zList(Int, [Int(1)]),zList, False), list_append(Int(2), x), list_len(x)]))) != Int(2):
-        print("Basic evaluation of list_len failed")
+    if (evaluate(Seq([Declare(x, zArray(Int, [Int(1)]),zArray, False), array_append(Int(2), x), array_len(x)]))) != Int(2):
+        print("Basic evaluation of array_len failed")
         return -1
-    if (evaluate(Seq([Declare(x, zList(Str, [Str("hi")]),zList, False), list_insert(Int(0), Str("hello"),x), list_len(x)]))) != Int(2):
-        print("Basic evaluation of list_insert failed")
+    if (evaluate(Seq([Declare(x, zArray(Str, [Str("hi")]),zArray, False), array_insert(Int(0), Str("hello"),x), array_len(x)]))) != Int(2):
+        print("Basic evaluation of array_insert failed")
         return -1
-    if (evaluate(Seq([Declare(x, zList(Int, [Int(1), Int(2),Int(3)]),zList, False), list_append(Int(100), x), Slice(Variable("x"),Int(1),Int(3))]))).elements[0] != Int(2):
-        print("Basic evaluation of list_slice failed")
+    if (evaluate(Seq([Declare(x, zArray(Int, [Int(1), Int(2),Int(3)]),zArray, False), array_append(Int(100), x), Slice(Variable("x"),Int(1),Int(3))]))).elements[0] != Int(2):
+        print("Basic evaluation of array_slice failed")
         return -1
     try:
-        ast = Seq([Declare(x, zList(Str, [Str("hi")]),zList, False), list_insert(Int(0), Int(1000),x), list_len(x)])
+        ast = Seq([Declare(x, zArray(Str, [Str("hi")]),zArray, False), array_insert(Int(0), Int(1000),x), array_len(x)])
         typecheck(ast)
         evaluate(ast)
-        print("Typechecking of list insert failed")
+        print("Typechecking of array insert failed")
         return -1
     except:
         print("Caught error")

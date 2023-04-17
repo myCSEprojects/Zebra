@@ -1,7 +1,7 @@
-int in = 13;
+var int in = 13;
 
 func int largestPrimeFactor(int n){
-    int factor = 2;
+    var int factor = 2;
     while (factor * factor <= n) {
         if (n % factor == 0) {
             n = n // factor;
@@ -10,9 +10,9 @@ func int largestPrimeFactor(int n){
             factor = factor + 1;
         }
     }
-    n;
+    return n;
 }
 
-int out = largestPrimeFactor(in);
+var int out = largestPrimeFactor(in);
 
 zout(out);

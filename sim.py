@@ -3,36 +3,77 @@ from fractions import Fraction
 from typing import Union, Optional, List, Dict
 from lexer import Keyword, Operator, Identifier
 from error import RuntimeError, typeCheckError, resolveError
+import pprint
+
+def traverse_array(lst):
+    '''
+    Utility for printing lists
+    '''
+    print_lst = []
+    for ele in lst.elements:
+        if isinstance(ele, zArray):
+            array_ele = traverse_array(ele)
+            print_lst.append(array_ele)
+        else:
+            print_lst.append(ele.value)
+    return print_lst
 
 @dataclass
-class Variable:
+class metadata:
+    '''
+    Class to store the meta data of the AST
+    '''
+    lineNumber: int
+
+@dataclass
+class instanceType:
+    '''
+    Class to store the type of the instance
+    '''
+    name: "ClassObject"
+    def __repr__(self):
+        return f"InstanceType{self.name}"
+
+@dataclass(frozen=True)
+class Variable():
     '''
     Variable class containing the name of the variable
     '''
+    lineNumber: int
     name: str
+    id: int
 
-@dataclass
-class nil:
-    pass
+    def __repr__(self):
+        return f"{self.name}::{self.id}"
+
 # Basic Data Types
 @dataclass
-class Int:
+class nil():
+    pass
+
+@dataclass
+class Int():
    '''
    Class representing the integers in the language
    '''
    value: int
 
+   def __repr__ (self):
+       return f"{self.value}"
+
 @dataclass
-class Float:
+class Float():
     '''
     Floating objects represented as Fractions in python
     '''
     value: Fraction
     def __init__(self, value):
         self.value = Fraction(value)
+    def __repr__ (self):
+       return f"{self.value}"
 
 @dataclass
-class Bool:
+class Bool():
     '''
     Seperate boolean class representing two types of values True and False
     '''
@@ -43,27 +84,21 @@ class Bool:
             return Bool(False)
         else:
             return Bool(True)
+    def __repr__ (self):
+       return f"{self.value}"
 
 @dataclass
-class Str :
+class Str() :
     value: str
 
-@dataclass
-class nil:
-    noval = None
-
-@dataclass
-class Slice:
-    value : 'AST' 
-    first : Int 
-    second : Int 
-
+    def __repr__ (self):
+       return f"{self.value}"
 
 # Defined binary operators in the Language
 BINARY_OPERATORS = [
                     "+", "/", "-", "//", "*", "%", "^", "-",    # Binary operators for numbers
                     "<<", ">>", "&", "|",                       # Bitwise binary operators for numbers
-                    "<=", "<", ">", ">=", "==", "~=",           # Binary operators for Number types(similar)
+                    "<=", "<", ">", ">=", "==", "!=",           # Binary operators for Number types(similar)
                     "&&", "||"  , "="                           # Binary operators for Booleans
 ]
 
@@ -74,80 +109,63 @@ UNARY_OPERATORS = [
 ]
 
 @dataclass
-class zList:
-    dtype : type
+class zArray(metadata):
+    dtype : List[type|instanceType]
     elements : list
 
-@dataclass
-class list_append:
-    element : 'AST'
-    list_name : Identifier
+    # Utility function to print the array
+    def __repr__(self):
+        s = "["
+        for ele in self.elements:
+            s += str(ele) + ", \n"
+        s += "]"
+        return s
+            
 
 @dataclass
-class list_remove:
-    index : Int
-    list_name : Identifier
-
-@dataclass 
-class list_len:
-    list_name : 'AST'
-
-@dataclass 
-class list_insert:
-    index : Int
-    element : 'AST'
-    list_name : Identifier
-
-# Basic Operations
-@dataclass
-class Declare:
-    '''
-    Declaration class
-    '''
-    var: Identifier
-    value: 'AST'
-    dtype: type
-    isConst: bool
+class FnObject:
+    function_type: str
+    params_types: List[type]
+    params: List[Variable]
+    body: 'AST'
+    return_type: type
 
 @dataclass
-class If:
-    '''
-    If class evaluates to Bool
-    '''
-    condition: 'AST'
-    ifBlock: 'AST'
-    elseBlock: 'AST'
+class ClassObject:
+    name: str
+    methods: Dict[str, "Declare"]
+    thisID: int
+
+    def __repr__(self):
+        return f"Class<{self.name}>"
+    
+@dataclass
+class InstanceObject:
+    zClass: ClassObject
+    fields: Dict[str, List[Union["AST", type, bool]]]
+    
+    def __repr__(self):
+        return f"Instance<{self.zClass.name}>"
 
 @dataclass
-class str_concat:
-    #function to concat the strings passed as an argument list
-    Left : 'AST'
-    Right : 'AST'
-
-
-@dataclass
-class Loop:
+class arrayType:
     '''
-    loop(variable,steps,block)
+    Class to store the type of the list
     '''
-    var: Variable
-    steps: 'AST'
-    block: 'AST'
+    dtype: List[type|instanceType]
 
-
-@dataclass
-class While:
-    '''
-    while loop
-    '''
-    condition: 'AST'
-    block: 'AST'
+    def __repr__(self):
+        s = ""
+        for ele in self.dtype:
+            s += ele.__name__ + ", "
+        return f"arrayType[{s}]"
 
 @dataclass
 class Scopes:
     '''
     Scopes storing the stack of environments
     '''
+    stack: List[Dict[Variable, "AST"]]
     def __init__(self, stack: List[Dict[Variable, "AST"]] = None):
         if (stack == None):
             self.stack = [dict()]
@@ -161,89 +179,238 @@ class Scopes:
         assert(len(self.stack) != 0)
         self.stack.pop()
         
-    def declareFun(self, f, fn_object):
+    def declareFun(self, f: Variable, fn_object):
         #declares the function in the current scope with the give name v
         assert(len(self.stack) != 0)
-
-        if f.val in self.stack[-1]:
-            resolveError(f"Function {f.val} already declared in the current scope.", lineNumber=f.lineNumber)
-
-        self.stack[-1][f.val] = [fn_object, FnObject, False]
+        self.stack[-1][f] = [fn_object, FnObject, False]
     
-    def declareVariable(self, var: Identifier, value: 'AST', dtype:type, isConst: bool):
+    def declareVariable(self, var: Variable, value: 'AST', dtype:type, isConst: bool):
         '''
         Only declares a variable in the current scope
         '''
         assert(len(self.stack) != 0)
-
         # Avoiding redeclaration in the same scope
-        if var.val in self.stack[-1]:
-            resolveError(f"Redeclaring already declared variable {var.val}", var.lineNumber)
+        if ((not isinstance(dtype, type)) and isinstance(dtype, instanceType)):
+            if (value != nil() and (isinstance(value, InstanceObject) and dtype.name.name != value.zClass.name)):
+                typeCheckError(f"Cannot initialize a {dtype.name} instance with instance of type {value.zClass.name}.", var.lineNumber)
+        
+        elif ((not isinstance(dtype, type)) and isinstance(dtype, arrayType)):
+            if (value != nil() and (isinstance(value, zArray) and dtype.dtype != value.dtype)):
+                typeCheckError(f"Cannot initialize a {dtype.dtype} array with array of type {value.dtype}.", var.lineNumber)
+
+        # Implicit type conversion from float to int and int to float
+        elif (issubclass(dtype, Int)):
+            if (isinstance(value, Float)):
+                value = Int(int(value.value))
+        elif (issubclass(dtype, Float)):
+            if (isinstance(value, Int)):
+                value = Float(float(value.value) if value.value != None else 0.0)
         elif (dtype != Bool and value != nil() and not isinstance(value, dtype)):
             typeCheckError(f"Cannot initialize a {dtype.__name__} with Literal of type {type(value).__name__}.", var.lineNumber)
         elif (dtype == Bool):
             value = Bool.truthy(value)
-        self.stack[-1][var.val] = [value, dtype, isConst]
+        self.stack[-1][var] = [value, dtype, isConst]
     
-    def updateVariable(self, name: str, value: 'AST'):
+    def updateVariable(self, var: Variable, value: 'AST'):
         '''
         Utility to update the variable in the closest scope
         '''
+        id = var.id
+        name = var.name
+        lineNumber = var.lineNumber
         for i in range(len(self.stack)-1, -1, -1):
-            if name in self.stack[i]:
-                
-                # Truthify if lvalue is of type Bool
-                if (issubclass(self.stack[i][name][1], Bool)):
-                    value = Bool.truthy(value)
+            for var in self.stack[i]:
+                if var.id == id:
+                    if (not isinstance(self.stack[i][var][1], type) and isinstance(self.stack[i][var][1], instanceType)):
+                        if (value != nil() and ((not isinstance(value, InstanceObject)) or (isinstance(value, InstanceObject) and self.stack[i][var][1].name.name != value.zClass.name))):
+                            typeCheckError(f"Cannot assign a {self.stack[i][var][1].name} instance with instance of type {value}.", lineNumber)
+                        self.stack[i][var][0] = value
+                        return
+                    elif (not isinstance(self.stack[i][var][1], type) and isinstance(self.stack[i][var][1], arrayType)):
+                        if (value != nil() and ((not isinstance(value, zArray)))):
+                            typeCheckError(f"Cannot assign a {self.stack[i][var][1].dtype} array with instance of type {value}.", lineNumber)
+                        elif (value != nil() and (isinstance(value, zArray) and self.stack[i][var][1].dtype != value.dtype)):
+                            typeCheckError(f"Cannot assign a {self.stack[i][var][1].dtype} array with array of type {value.dtype}.", lineNumber)
+                        self.stack[i][var][0] = value
+                        return
+                    # Truthify if lvalue is of type Bool
+                    if (issubclass(self.stack[i][var][1], Bool)):
+                        value = Bool.truthy(value)
 
-                if (self.getVariableIsConst(name) == True):
-                    resolveError(f"Cannot Update const Variable {name}", None)
-                dtype = self.getVariableType(name)
-                if (value != nil() and not isinstance(value, dtype)):
-                    typeCheckError(f"Cannot assign {type(value).__name__} to a variable of type {dtype.__name__}", None)
-                
-                self.stack[i][name][0] = value
-                return value
-        resolveError(f"Could not resolve the variable {name}", None)
+                    if (self.getVariableIsConst(var) == True):
+                        typeCheckError(f"Cannot Update const Variable {var.name}", lineNumber, "integrityError")
+                    dtype = self.getVariableType(var)
+
+                    # Implicit type conversion from float to int and int to float
+                    if (issubclass(dtype, Int)):
+                        if (isinstance(value, Float)):
+                            value = Int(int(value.value))
+                    
+                    elif (issubclass(dtype, Float)):
+                        if (isinstance(value, Int)):
+                            value = Float(float(value.value) if value.value != None else 0.0)
+
+                    elif (value != nil() and not isinstance(value, dtype)):
+                        typeCheckError(f"Cannot assign {type(value).__name__} to a variable of type {dtype.__name__}", lineNumber)
+                    
+                    self.stack[i][var][0] = value
+                    return value
 
 
-    def getVariable(self, name: str):
+    def getVariable(self, var: Variable):
         '''
         Utility to get the value of the variable in the closest scope
         '''
         for i in range(len(self.stack)-1, -1, -1):
-            if name in self.stack[i]:
-                return self.stack[i][name][0]
+            for v in self.stack[i]:
+                if v.id == var.id:
+                    return self.stack[i][v][0]
     
-    def getVariableType(self, name: str):
+    def getVariableType(self, var: Variable):
         '''
           Utility to get the type of the variable in the closest scope
         '''
         for i in range(len(self.stack)-1, -1, -1):
-            if name in self.stack[i]:
-                return self.stack[i][name][1]
+            for v in self.stack[i]:
+                if v.id == var.id:
+                    return self.stack[i][v][1]
     
-    def getVariableIsConst(self, name: str):
+    def getVariableIsConst(self, var: Variable):
         '''
         Utility to get the constness of the variable in the closest scope
         '''
         for i in range(len(self.stack)-1, -1, -1):
-            if name in self.stack[i]:
-                return self.stack[i][name][2]
+            for v in self.stack[i]:
+                if v.id == var.id:
+                    return self.stack[i][v][2]
+    
+    def __repr__(self):
+        s = ""
+        for i in range(len(self.stack)-1, -1, -1):
+            s += (f"Scope {i}:\n")
+            for v in self.stack[i]:
+                s += (f"{v.name} : {self.stack[i][v][0]}\n")
+            s += '\n'
+        return s 
+
+@dataclass 
+class DeclareClass(metadata):
+    var : Variable
+    stmts : List['DeclareFun']
+    thisID : int
 
 @dataclass
-class Block:
+class Get(metadata):
+    '''
+    Get class to get the field of a given object
+    '''
+    var: Variable
+    field: str
+
+@dataclass
+class Set(metadata):
+    '''
+    Set class to set the field of a given object
+    '''
+    var: Variable
+    field: str
+    value: 'AST'
+
+@dataclass
+class AtIndex(metadata):
+    '''
+    Get the value of the element at a given index
+    '''
+    var: 'AST'
+    index: 'AST'
+
+@dataclass
+class SetAtIndex(metadata):
+    '''
+    Set the value of the element at a given index
+    '''
+    var: 'AST'
+    index: 'AST'
+    value: 'AST'
+
+@dataclass
+class This(metadata):
+    '''
+    This class to get the current instance
+    '''
+    id: int
+
+@dataclass
+class array_pop(metadata):
+    array_name : 'AST'
+
+@dataclass
+class Slice(metadata):
+    value : 'AST' 
+    first : Int 
+    second : Int 
+
+@dataclass
+class array_append(metadata):
+    element : 'AST'
+    array_name : Identifier
+
+@dataclass
+class array_remove(metadata):
+    index : Int
+    array_name : Identifier
+
+@dataclass 
+class array_len(metadata):
+    array_name : 'AST'
+
+@dataclass 
+class array_insert(metadata):
+    index : Int
+    element : 'AST'
+    array_name : Identifier
+
+# Basic Operations
+@dataclass
+class Declare(metadata):
+    '''
+    Declaration class
+    '''
+    var: Variable
+    value: 'AST'
+    dtype: type
+    isConst: bool
+
+@dataclass
+class If(metadata):
+    '''
+    If class evaluates to Bool
+    '''
+    condition: 'AST'
+    ifBlock: 'AST'
+    elseBlock: 'AST'
+
+@dataclass
+class While(metadata):
+    '''
+    while loop
+    '''
+    condition: 'AST'
+    block: 'AST'
+
+@dataclass
+class Block():
     '''
     Block Statement Introducing new Scope
     '''
     blockStatements: 'AST'
 
 @dataclass
-class BinOp:
+class BinOp(metadata):
     '''
     Variable evaluting to the value of the binary operation
     '''
-    operator: Operator
+    operator: str
     firstOperand: 'AST'
     secondOperand: 'AST'
 
@@ -260,17 +427,18 @@ class BinOp:
 
 
 @dataclass
-class UnOp:
+class UnOp(metadata):
     '''
     Variable evaluating to the value of the unary operation 
     '''
+    operator: str
     operand: 'AST'
-    operator: Operator
 
 @dataclass
-class PRINT:
+class PRINT(metadata):
     print_stmt: List['AST']
-    sep: Optional[str]=' '
+    sep: Optional[str]=Str(' ')
+    end: Optional[str]=Str('\n')
 
 @dataclass
 class Seq:
@@ -278,46 +446,47 @@ class Seq:
 
 
 @dataclass
-class For:
+class For(metadata):
     initial : 'AST'
     condition : 'AST'
     block: 'AST'
         
 @dataclass
-class DeclareFun:
-    name: 'AST'
+class DeclareFun(metadata):
+    var: Variable
     return_type: type
     params_type : List[type]
-    params: List[Identifier]
+    params: List[Variable]
     body: 'AST'
+    functionType: str
 
 @dataclass
-class FunCall:
+class FunCall(metadata):
     fn: 'AST'
     args: List['AST']
 
 @dataclass
-class FnObject:
-    params_types: List[type]
-    params: List[Identifier]
-    body: 'AST'
-    return_type: type
+class Return(metadata):
+    value: 'AST'
     
 # Defining the AST
-AST = Variable|BinOp|Bool|Int|Float|Declare|If|UnOp|Str|str_concat|Slice|nil|PRINT|Seq|For|DeclareFun|FunCall|zList|list_append|list_insert|list_len|list_remove
+AST = Variable|BinOp|Bool|Int|Float|Declare|If|UnOp|Str|Slice|nil|PRINT|Seq|For|DeclareFun|FunCall|zArray|array_append|array_insert|array_len|array_remove|array_pop|Return|FnObject|ClassObject|InstanceObject|DeclareClass|Get|Set|This|Block
 
 # Defining a Number as both an integer as  well as Float
 Number = Float|Int
+
 
 def evaluate(program: AST, scopes: Scopes = None):
     '''
     Evaluates the given AST
     '''
+    # Generating a new scope if not provided
     if (scopes == None):
         scopes = Scopes()
+    
     match program:
-        case Variable(name):
-            return scopes.getVariable(name)
+        case Variable(lineNumber, name, _) as v:
+            return scopes.getVariable(v)
         
         case Int(value):
             return program
@@ -334,8 +503,16 @@ def evaluate(program: AST, scopes: Scopes = None):
         case nil():
             return program
         
-        case zList(dtype, value):
-            return program
+        case InstanceObject() as obj:
+            return obj
+        
+        case This(lineNumber, id):
+            return scopes.getVariable(Variable(lineNumber, "this", id ))
+        
+        case zArray(dtype, value) as arr:
+            for i in range(len(arr.elements)):
+                arr.elements[i] = evaluate(arr.elements[i], scopes)
+            return arr
 
         case Block(blockStatements):
             # Creating a new scope
@@ -348,18 +525,22 @@ def evaluate(program: AST, scopes: Scopes = None):
 
             return returnVal
 
-        case BinOp(operator, firstOperand, secondOperand):
+        case BinOp(lineNumber, operator, firstOperand, secondOperand) as b:
             
             secondOperand = evaluate(secondOperand, scopes)
             
-            if(operator.val != "="):
+            if(operator != "="):
                 firstOperand = evaluate(firstOperand, scopes)
             
-            match operator.val:
+            match operator:
                 case "+":
                     #code for string concatenation starts
                     if (isinstance(firstOperand, Str) and isinstance(secondOperand, Str)):
                         return Str(firstOperand.value + secondOperand.value)
+                    
+                    if (isinstance(firstOperand, zArray) and isinstance(secondOperand, zArray)):
+                        return zArray(lineNumber, firstOperand.dtype, firstOperand.elements + secondOperand.elements)
+                    
                     #code for string concatenation ends
                     
                     firstOperand, secondOperand = BinOp.implicitIntToFloat(firstOperand, secondOperand)
@@ -379,7 +560,7 @@ def evaluate(program: AST, scopes: Scopes = None):
                 
                 case "/":
                     if (secondOperand == Int(0) or secondOperand == Float(0)):
-                        RuntimeError("Cannot divide with zero.", operator.lineNumber)
+                        RuntimeError("Cannot divide with zero.", lineNumber)
                     return Float(firstOperand.value / secondOperand.value)
                 
                 case "*":
@@ -403,7 +584,7 @@ def evaluate(program: AST, scopes: Scopes = None):
                 
                 case "//" :
                     if (secondOperand == Int(0) or secondOperand == Float(0)):
-                        RuntimeError("Cannot divide with zero.", operator.lineNumber)
+                        RuntimeError("Cannot divide with zero.", lineNumber)
                     return Int(int(firstOperand.value / secondOperand.value))
                 
                 case "%":
@@ -411,12 +592,12 @@ def evaluate(program: AST, scopes: Scopes = None):
                 
                 case "<<":
                     if (secondOperand.value < 0):
-                        RuntimeError(f"Negative left operand not allowed for {operator}.", operator.lineNumber)
+                        RuntimeError(f"Negative left operand not allowed for {operator}.", lineNumber)
                     return Int(firstOperand.value << secondOperand.value)
                 
                 case ">>":
                     if (secondOperand.value < 0):
-                        RuntimeError(f"Negative left operand not allowed for {operator}.", operator.lineNumber)
+                        RuntimeError(f"Negative left operand not allowed for {operator}.", lineNumber)
                     return Int(firstOperand.value >> secondOperand.value)
                 
                 case "&":
@@ -449,11 +630,15 @@ def evaluate(program: AST, scopes: Scopes = None):
                 case "||":
                     return Bool(Bool.truthy(firstOperand).value or Bool.truthy(secondOperand).value)
                 case "=":
-                    return scopes.updateVariable(firstOperand.name, secondOperand)
+                    return scopes.updateVariable(firstOperand, secondOperand)
+                case "^":
+                    if isinstance(firstOperand, Int) and isinstance(secondOperand, Int):
+                        return Int(firstOperand.value ** secondOperand.value)
+                    return Float(firstOperand.value ** secondOperand.value)
 
-        case UnOp(operator, operand):
+        case UnOp(lineNumber, operator, operand):
             operand = evaluate(operand, scopes)
-            match operator.val:
+            match operator:
                 case "-":
                     # Returning Literal similar to the operand literal
                     if (isinstance(operand, Float)):
@@ -464,14 +649,9 @@ def evaluate(program: AST, scopes: Scopes = None):
                     evaluated_operand = Bool.truthy(operand.value)
                     return Bool(not evaluated_operand.value)
         
-        case Declare(var, value, dtype, isConst):
+        case Declare(lineNumber, var, value, dtype, isConst):
             # Evaluating the expression before declaration
-            if (dtype == zList):
-                if (value != nil()):
-                    for i in range(len(value.elements)):
-                        value.elements[i]=evaluate(value.elements[i], scopes)
-            else:
-                value = evaluate(value, scopes)
+            value = evaluate(value, scopes)
             
             # Truthify if Bool dtype
             if (dtype == Bool):
@@ -481,7 +661,7 @@ def evaluate(program: AST, scopes: Scopes = None):
 
             return value
 
-        case If (condition, ifBlock, elseBlock):
+        case If (lineNumber, condition, ifBlock, elseBlock):
             evaluated_condition = Bool.truthy(evaluate(condition, scopes))
             if (evaluated_condition.value):
                 return evaluate(ifBlock, scopes)
@@ -491,106 +671,221 @@ def evaluate(program: AST, scopes: Scopes = None):
                 else:
                     return nil()
 
-        case Slice(value_, first, second):
+        case Slice(lineNumber, value_, first, second):
             elem = evaluate(value_, scopes)
-            if(not(isinstance(elem, zList))):
-        
+            if(not(isinstance(elem, zArray))):
                 if (first.value>second.value or first.value < 0 or second.value > len(elem.value)):
-                    RuntimeError("Index out of bounds", None, "indexError")
+                    RuntimeError("Index out of bounds", lineNumber, "indexError")
                 
                 return Str(elem.value[first.value:second.value])
             else:
-
+                if (first.value < 0 or first.value >= len(elem.elements)):
+                    RuntimeError("Index out of bounds", lineNumber, "indexError")
+                if(second==nil()):
+                    return elem.elements[first.value:first.value+1][0]
                 if (first.value>second.value or first.value < 0 or second.value > len(elem.elements)):
-                    RuntimeError("Index out of bounds", None, "indexError")
-                return zList(elem.dtype, elem.elements[first.value:second.value])
+                    RuntimeError("Index out of bounds", lineNumber, "indexError")
+                return zArray(lineNumber, elem.dtype, elem.elements[first.value:second.value])
         
-        case PRINT(print_stmt, end):
-            ans=None
-            for stmt in print_stmt:
-                ans=evaluate(stmt,scopes)
-                print(ans.value, end=end)
-            print()
+        case PRINT(lineNumber, print_stmt, sep,end):
+            for i,stmt in  enumerate(print_stmt):
+                out=evaluate(stmt,scopes)
+                if(isinstance(out,zArray)):
+                    l=traverse_array(out)
+                    if (i==len(print_stmt)-1):
+                        print(l, end=end.value)
+                    else:
+                        print(l, end=sep.value)
+                elif (isinstance(out,nil)):
+                    continue
+                else:
+                    if (i==len(print_stmt)-1):
+                        print(out, end=end.value)
+                    else:
+                        print(out, end=sep.value)
+            
             return nil()
 
         case Seq(lines):
             ans = nil()
             for line in lines:
+                pp = pprint.PrettyPrinter(indent=4)
+                # pp.pprint(line)
                 ans = evaluate(line, scopes)
+                match ans:
+                    case Return(l,r):
+                        # print("checkpoint:0")
+                        break
+                    case _:
+                        continue
             return ans
-        
-        case Loop(var,steps,block) :
-            steps = evaluate(steps,scopes)
-            scopes.updateVariable(var.name, steps)
-            if (steps == Int(0)) :
-                return Bool(False)
-            else :
-                evaluate(block,scopes)
-                return evaluate(Loop(var,BinOp("-",steps,Int(1)), block),scopes)
 
-        case While(condition,block) :
-            evaluated_condition = evaluate(condition,scopes)
-            if (evaluated_condition.value):
+        case While(lineNumber, condition,block) :
+            while(evaluate(condition,scopes).value):
                 evaluate(block,scopes)
-                return evaluate(While(condition,block),scopes)
-            else :
-                return Bool(False)
+            
+            return nil()
+
         
-        case For(initial,condition,block) :
+        case For(lineNumber, initial,condition,block) :
             # evaluating the initialization and declaration condition
             scopes.beginScope()
             # run the initial statement(should not effect outrer scope)
             evaluate(initial,scopes)
-            retVal = evaluate(While(condition,block),scopes)
+            retVal = evaluate(While(lineNumber, condition,block),scopes)
             scopes.endScope()
             return retVal
         
-        case list_append(element, list_name):
-            l = scopes.getVariable(list_name.val)
+        case array_append(lineNumber, element, var):
+            l = scopes.getVariable(var)
             element=evaluate(element, scopes)
             l.elements.append(element)
             return nil()
         
-        case list_remove(index , list_name):
-            l=scopes.getVariable(list_name.val)
+        case array_remove(lineNumber, index , var):
+            l=scopes.getVariable(var)
             # Checking if the index is out of bounds
+            index=evaluate(index, scopes)
             if (len(l.elements) <= index.value):
-                RuntimeError(f"list index out of bounds", None, 'indexError')
+                RuntimeError(f"array index out of bounds", lineNumber, 'indexError')
             return l.elements.pop(index.value)
         
-        case list_len(l):
-            l = evaluate(l, scopes)
-            return Int(len(l.elements))
+        case array_len(lineNumber, var):
+            l = evaluate(var, scopes)
+            if(isinstance(l,zArray)):
+                return Int(len(l.elements))
+            elif(isinstance(l,Str)):
+                return Int(len(l.value))
         
-        case list_insert(index, element, list_name):
-            l = scopes.getVariable(list_name.val)
+        case array_pop(lineNumber, array_name):
+            l=scopes.getVariable(array_name)
+            if (len(l.elements) == 0):
+                RuntimeError(f"Cannot popout from an empty array", lineNumber, 'indexError')
+            return l.elements.pop()
+        
+        case array_insert(lineNumber, index, element, var):
+            l = scopes.getVariable(var)
             element=evaluate(element, scopes)
             l.elements.insert(index.value, element)
             return nil()
 
-        case DeclareFun(Identifier(lineNumber, _) as f, return_type, params_type, params, body):
-            scopes.declareFun(f, FnObject(params_type, params, body, return_type))
+        case DeclareFun(lineNumber, f, return_type, params_type, params, body, function_type):
+            scopes.declareFun(f, FnObject(function_type, params_type, params, body, return_type))
             return nil()
-
-        case FunCall(Identifier(lineNumber, _) as f, args): 
-            fn = scopes.getVariable(f.val)
-            argv = []
-
-            for arg in args:
-                argv.append(evaluate(arg, scopes))
-
-            scopes.beginScope()
-
-            for i in range(len(fn.params)):
-                scopes.declareVariable(fn.params[i],argv[i],fn.params_types[i],False)
         
-            returnVal = evaluate(fn.body, scopes)
+        case Get(lineNumber, var, name) as g:
+            obj = evaluate(var, scopes)
+            if (isinstance(obj, InstanceObject)):
+                field = nil()
+                if name in obj.fields:
+                    field = obj.fields[name][0]
+                elif name in obj.zClass.methods:
+                    field = obj.zClass.methods[name]
+                else:
+                    RuntimeError(f"Instance of class {obj.zClass.name} has no attribute {name}", lineNumber, "attributeError")
+                if (isinstance(field, DeclareFun)):
+                    # Begining scopes for the this variable
+                    scopes.beginScope()
 
-            scopes.endScope()
+                    # Declaring the this variable
+                    scopes.declareVariable(Variable(lineNumber, "this", obj.zClass.thisID), obj, instanceType(obj.zClass), False)
 
-            return returnVal
+                    # Declaring the function
+                    evaluate(field, scopes)
+                    return scopes.getVariable(field.var)
+                return field
+            
+        case Set(lineNumber, var, name, value):
+            obj = evaluate(var, scopes)
+            value = evaluate(value, scopes)
+            if (isinstance(obj, InstanceObject)):
+                if name in obj.fields:
+                    obj.fields[name][0] = value
+                else:
+                    RuntimeError(f"Instance of class {obj.zClass.name} has no attribute {name}", lineNumber, "attributeError")         
+
+        case AtIndex(lineNumber, var, index):
+            obj = evaluate(var, scopes)
+            index = evaluate(index, scopes)
+            if (isinstance(obj, zArray)):
+                if (index.value < 0 or index.value >= len(obj.elements)):
+                    RuntimeError("Index out of bounds", lineNumber, "indexError")
+                return obj.elements[index.value]
+            elif (isinstance(obj, Str)):
+                if (index.value < 0 or index.value >= len(obj.value)):
+                    RuntimeError("Index out of bounds", lineNumber, "indexError")
+                return Str(obj.value[index.value])
+        
+        case SetAtIndex(lineNumber, var, index, value):
+            obj = evaluate(var, scopes)
+            index = evaluate(index, scopes)
+            value = evaluate(value, scopes)
+            if (isinstance(obj, zArray)):
+                if (index.value < 0 or index.value >= len(obj.elements)):
+                    RuntimeError("Index out of bounds", lineNumber, "indexError")
+                obj.elements[index.value] = value
+            elif (isinstance(obj, Str)):
+                if (index.value < 0 or index.value >= len(obj.value)):
+                    RuntimeError("Index out of bounds", lineNumber, "indexError")
+                obj.value = obj.value[:index.value] + value.value + obj.value[index.value+1:]
+
+        case DeclareClass(lineNumber, var, stmts, thisID):
+            classObj = ClassObject(var.name, stmts, thisID)
+            scopes.declareVariable(var, classObj, ClassObject, False)
+            
+        case FunCall(lineNumber, f, args): 
+            fn = evaluate(f, scopes)
+            
+            # Checking if it is a class instantiation
+            if (isinstance(fn, ClassObject)):
+                # Collecting all the instance fields
+                instanceFields = {}
+                for stmt in fn.methods:
+                    stmt = fn.methods[stmt]
+                    if isinstance(stmt, Declare):
+                        instanceFields[stmt.var.name] = [evaluate(stmt.value), stmt.dtype, stmt.isConst]
+                
+                # Creating the instance object from the class object
+                obj = InstanceObject(fn, instanceFields)
+
+                # Calling the initialization method(if present)
+                if "init" in fn.methods:
+                    evaluate(FunCall(lineNumber, Get(lineNumber, obj, "init"), args), scopes)
+                
+                # overriding the return from the init function
+                return obj
+            
+            else:
+                argv = []
+
+                for arg in args:
+                    argv.append(evaluate(arg, scopes))
+
+                scopes.beginScope()
+
+                for i in range(len(fn.params)):
+                    scopes.declareVariable(fn.params[i],argv[i],fn.params_types[i],False)
+            
+                returnVal = evaluate(fn.body, scopes)
+                
+                scopes.endScope()
+
+                if (fn.function_type == 'METHOD'):
+                    scopes.endScope()
+                
+                match returnVal:
+                    case Return(lineNumber, value):
+                        return_val = evaluate(value, scopes)
+                        return return_val
+                    case _:
+                        return nil()
+            
+        
+        case Return(lineNumber, value):
+            r =  evaluate(value, scopes)
+            return Return(lineNumber,r)
     
         # Handling unknown expressions
-        case _:
-            raise Exception("Expression|Statement Invalid")
+        case _ as v:
+            raise Exception(f"Got {v}, Expression|Statement Invalid")
 

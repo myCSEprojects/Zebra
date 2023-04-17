@@ -317,6 +317,10 @@ class Parser:
                 val = self.parse_expr()
                 start = self.parse_expr()
                 return Slice(lineNumber, val,start,nil())
+
+            case Keyword(lineNumber,'nil'):
+                self.lexer.advance()
+                return nil()
             
             case Integer(lineNumber, value):
                 self.lexer.advance()

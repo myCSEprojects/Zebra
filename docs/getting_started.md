@@ -44,7 +44,7 @@ For more on syntaxes and other things, see the full [tutorial](zebra.md).
 Zebra is designed to be easy to use and understand. Here are some of its key features.
 
 - Python and C like syntax: if you know Python and C, you would do fine with Zebra.
-- Static Typing: variables don't need to be declared with a type before use.
+- Static Typing: variables need to be declared with a type before use.
 - Control structures: if/else, loops, and functions.
 - Lexical Scoping: the language is lexicaly scoped.
 

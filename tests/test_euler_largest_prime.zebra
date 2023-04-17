@@ -1,4 +1,12 @@
-var int in = 13;
+var int in = 13; @ this is a single line comment
+
+
+$ 
+this is a 
+multiline 
+comment
+$
+
 
 func int largestPrimeFactor(int n){
     var int factor = 2;

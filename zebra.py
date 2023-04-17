@@ -5,7 +5,7 @@ from sim import *
 import pprint
 from error import *
 from resolver import *
-import time 
+import time
 try:
     import readline
 except:

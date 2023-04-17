@@ -98,7 +98,7 @@ class Str() :
 BINARY_OPERATORS = [
                     "+", "/", "-", "//", "*", "%", "^", "-",    # Binary operators for numbers
                     "<<", ">>", "&", "|",                       # Bitwise binary operators for numbers
-                    "<=", "<", ">", ">=", "==", "!=",           # Binary operators for Number types(similar)
+                    "<=", "<", ">", ">=", "==", "~=", "!=",     # Binary operators for Number types(similar)
                     "&&", "||"  , "="                           # Binary operators for Booleans
 ]
 
@@ -721,10 +721,12 @@ def evaluate(program: AST, scopes: Scopes = None):
             return ans
 
         case While(lineNumber, condition,block) :
-            while(evaluate(condition,scopes).value):
-                evaluate(block,scopes)
+            pp = pprint.PrettyPrinter(indent=4)
+            isreturn = None
+            while(isinstance(isreturn , Return ) == False  and  evaluate(condition,scopes).value):
+                isreturn = evaluate(block,scopes)
             
-            return nil()
+            return isreturn
 
         
         case For(lineNumber, initial,condition,block) :

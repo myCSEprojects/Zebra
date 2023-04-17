@@ -1,0 +1,26 @@
+@ gcd function
+func int gcd(int a, int b) {
+    while (b != 0) {
+        var int temp = b;
+        b = a % b;
+        a = temp;
+    }
+    return a;
+}
+@ lcm function
+func int lcm(int a, int b) {
+    var int c = (a * b) / gcd(a, b);
+    return c;
+}
+@ smallestmultiple function
+func int smallestmultiple() {
+    var int result = 1;
+    for (var int i = 2; i <= 20; i = i+1) {
+        result = lcm(result, i);
+    }
+    return result;
+}
+
+var int answer = smallestmultiple();
+
+zout(answer);

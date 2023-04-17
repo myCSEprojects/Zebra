@@ -126,8 +126,8 @@ def typecheck(program: AST, scopes = None):
             firstOperandType = typecheck(firstOperand, scopes)
             secondOperandType = typecheck(secondOperand, scopes)
             # Checking if the operator is defined
-            if (operator not in BINARY_OPERATORS):
-                typeCheckError(f"Binary Operator {operator} not reconized", lineNumber)              
+            if (operator not in BINARY_OPERATORS):           
+                typeCheckError(f"Binary Operator {operator} not recognized", lineNumber)
 
             # Raising type error in case left or the right side donot evaluate to a type
             if (operator != '=' and (((not isinstance(firstOperandType, type)) and isinstance(firstOperandType, instanceType)) or ((not isinstance(secondOperandType, type)) and isinstance(secondOperandType, instanceType)))):

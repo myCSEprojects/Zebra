@@ -206,7 +206,7 @@ class Lexer:
                     while True:
                         try:
                             c = self.stream.next_char()
-                            if c.isalpha():
+                            if c.isalnum() or c=="_":
                                 s = s + c
                             else:
                                 self.stream.unget()

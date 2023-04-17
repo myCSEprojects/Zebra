@@ -1,0 +1,28 @@
+func int sumofdivisors(int n) {
+    var int sum = 1;
+    var int m = (n)^(1/2);
+    for (var int i = 2; i <=m; i=i+1) {
+        if (n % i == 0) {
+            sum = sum + i;
+            var int m = n/i;
+            if (i != m) {
+                sum = sum + (n / i);
+            }
+        }
+    }
+    return sum;
+}
+func int Amicablenumbers() {
+    var int total = 0;
+    for (var int a = 2; a < 300; a=a+1) {
+        var int b = sumofdivisors(a);
+        if (a != b && sumofdivisors(b) == a && a > b) {
+            total = total + a + b;
+        }
+    }
+
+    return total;
+}
+
+var int ans = Amicablenumbers();
+zout(ans);

@@ -1,0 +1,34 @@
+func boolean ispalindrome(int n) {
+    var int reversen = 0;
+    var int originaln = n;
+    while (n > 0) {
+        reversen = reversen * 10 + n % 10;
+        n = n/10;
+    }
+    var boolean look;
+    if (reversen == originaln){
+        look = true;
+    }
+    else {
+        look = false;
+    }
+    return look;
+}
+
+
+func int findpalindrome() {
+    var int largestpalindrome = 0;
+    for (var int i = 10; i < 100; i=i+1) {
+        for (var int j = 10; j < 100; j=j+1) {
+            var int product = i * j;
+            if (ispalindrome(product) == true && product > largestpalindrome) {
+                largestpalindrome = product;
+            }
+        }
+    }
+    return largestpalindrome;
+}
+
+var int answer = findpalindrome();
+
+zout(answer);

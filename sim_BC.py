@@ -3,7 +3,7 @@ from fractions import Fraction
 from typing import Union, Optional, List, Dict
 from lexer import Keyword, Operator, Identifier
 from error import RuntimeError, typeCheckError, resolveError
-from sim import Variable, nil, Int, Float, Bool, Str, BinOp, UnOp, PRINT, Seq, For,If, While, Declare, zArray, Block, array_append, array_insert, array_len, array_pop, array_remove, AtIndex, SetAtIndex
+from sim import Variable, nil, Int, Float, Bool, Str, BinOp, UnOp, PRINT, Seq, For,If, While, Declare, zArray, Block, array_append, array_insert, array_len, array_pop, array_remove, AtIndex, SetAtIndex, FnObject
 
 # Defined binary operators in the Language
 BINARY_OPERATORS = [
@@ -27,6 +27,11 @@ AST = Variable|BinOp|Bool|Int|Float|If|UnOp|Str|nil|PRINT|Seq|For|While
 @dataclass
 class Label:
     target: int
+
+@dataclass
+class CompiledFunction:
+    entrypoint: int
+    staticLink: 'Frame'
 
 class I:
     @dataclass
@@ -158,6 +163,18 @@ class I:
         pass
 
     @dataclass
+    class PUSHFN:
+        label: Label
+
+    @dataclass
+    class CALL:
+        pass
+
+    @dataclass
+    class RET:
+        pass 
+
+    @dataclass
     class HALT:
         pass
 
@@ -192,6 +209,9 @@ Instruction = (
     | I.APPEND
     | I.ATINDEX
     | I.SETATINDEX
+    | I.PUSHFN
+    | I.CALL 
+    | I.RET
 )
 
 @dataclass
@@ -212,9 +232,17 @@ class ByteCode:
 
 class Frame:
     locals: List[AST]
-    def __init__(self):
+    returnAddress: int
+    dynamicLink: 'Frame'
+    staticlink: 'Frame'
+
+    def __init__(self, returnAddress: None, dynamicLink: None, staticlink: None):
         MAX_LOCALS = 32
         self.locals = [None] * MAX_LOCALS
+        self.returnAddress = returnAddress
+        self.dynamicLink = dynamicLink
+        self.staticlink = staticlink
+
 
 class VM:
     bytecode: ByteCode
@@ -231,6 +259,13 @@ class VM:
         self.data = []
         self.currentFrame = Frame()
 
+    def jump(self, jumps):
+        temp_frame = self.currentFrame
+        while jumps:
+            temp_frame = temp_frame.staticLink
+            jumps -= 1
+        return temp_frame
+
     def execute(self) -> AST:
         while True:
             assert self.ip < len(self.bytecode.inst)
@@ -238,6 +273,20 @@ class VM:
                 case I.PUSH(val):
                     self.data.append(val)
                     self.ip += 1
+
+                case I.PUSHFN(Label(offset)):
+                    self.data.append(CompiledFunction(offset, self.currentFrame))
+                    self.ip += 1
+
+                case I.CALL():
+                    cf = self.data.pop()
+                    self.currentFrame = Frame (returnAddress=self.ip + 1, dynamicLink=self.currentFrame, staticLink=cf.staticLink)
+                    self.ip = cf.entry
+
+                case I.RETURN():
+                    self.ip = self.currentFrame.returnAddress
+                    self.currentFrame = self.currentFrame.dynamicLink
+
                 case I.UMINUS():
                     op = self.data.pop()
                     if(isinstance(op, Float)):
@@ -400,12 +449,14 @@ class VM:
                     elif(end is not None):
                         print(p, end=end.value)
                     self.ip+=1
-                case I.LOAD(localID):
-                    self.data.append(self.currentFrame.locals[localID][0])
+                case I.LOAD(localID, staticJumps):
+                    frame =  self.jump(staticJumps)
+                    self.data.append(frame.locals[localID][0])
                     self.ip += 1
                 case I.STORE(localID):
+                    frame = self.jump(staticJumps)
                     v = self.data.pop()
-                    self.currentFrame.locals[localID][0] = v
+                    frame.locals[localID][0] = v
                     self.ip += 1
                 case I.ASSIGN(localID, dtype, isConst):
                     v=self.data.pop()

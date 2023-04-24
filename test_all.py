@@ -44,8 +44,12 @@ for test_file in files:
         
         # Redirecting the output to a string
         f = io.StringIO()
-        with redirect_stdout(f):
-            executeFile("tests/" + test_file)
+        try:
+            with redirect_stdout(f):
+                executeFile("tests/" + test_file, False, True)
+        except:
+            pass
+        
         out = f.getvalue().strip()
         
         # Print the output

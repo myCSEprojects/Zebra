@@ -1,0 +1,12 @@
+var string input_string = "aeiouhgahe";
+
+var int str_len = length(input_string);
+var int num_vowels = 0;
+
+for (var int i=0; i<str_len; i=i+1){
+    if (input_string[i]=='a' || input_string[i]=='e' || input_string[i]=='i' || input_string[i]=='o' || input_string[i]=='u'){
+        num_vowels = num_vowels + 1;
+    }
+}
+
+zout("Number of num_vowels in the string are", num_vowels);

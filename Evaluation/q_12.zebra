@@ -1,0 +1,33 @@
+func string lps(string str)
+{
+	var int n = length(str);
+	var int max = 1;
+    var int begin = 0;
+	for(var int i = 0; i < n; i=i+1) 
+    {
+		for (var int j = i; j < n; j=j+1) 
+        {
+			var int flag = 1;
+			for (var int k = 0; k<(j - i + 1)//2; k=k+1)
+            {
+				if (str[i+k]!=str[j-k])
+                {
+                    flag = 0;
+                }
+            }   
+			if (flag && (j - i + 1) > max) {
+				begin = i;
+				max = j - i + 1;
+			}
+		}
+	}
+    var string ans="";
+    for(var int i=begin; i<=(begin+max-1);i=i+1)
+    {
+        ans=ans+str[i];
+    }
+	return ans;
+}
+
+var string str = "MarkraM";
+zout(lps(str));

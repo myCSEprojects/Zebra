@@ -1,0 +1,19 @@
+var array(int) a = array(int){1,2,2};
+var int flag=0;
+for(var int i=0; i<length(a); i=i+1)
+{
+    for(var int j=i+1; j<length(a); j=j+1)
+    {
+        var int sum = a[i]+a[j];
+        for(var int k=0; k<length(a); k=k+1)
+        {
+            if(sum==a[k])
+            {
+                flag=1;
+            }
+        }
+    }
+}
+
+
+zout(flag==1);

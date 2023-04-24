@@ -1,4 +1,4 @@
-from sim_BC import *
+from codegen import *
 
 def test():
     a = Int(1)

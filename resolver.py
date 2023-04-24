@@ -16,6 +16,9 @@ class ResolverScopes:
             self.stack = stack
             self.localIDStack = [0]
     
+    def current_fdepth(self):
+        return len(self.localIDStack) - 1
+
     def beginFun(self):
         self.localIDStack.append(0)
     
@@ -38,7 +41,7 @@ class ResolverScopes:
         # Avoiding redeclarations in the same scope
         if name in self.stack[-1]:
             resolveError(f"Redeclaring already declared function {name}", var.lineNumber)
-        newVar = Variable(var.lineNumber,var.name, var.id, self.localIDStack[-1])
+        newVar = Variable(var.lineNumber,var.name, var.id, self.localIDStack[-1], self.current_fdepth(), 0)
         self.localIDStack[-1] += 1
         self.stack[-1][name] = newVar
         return newVar
@@ -52,7 +55,12 @@ class ResolverScopes:
         # Avoiding redeclaration in the same scope
         if name in self.stack[-1]:
             resolveError(f"Redeclaring already declared variable {name}", var.lineNumber)
-        newVar = Variable(var.lineNumber,var.name, var.id, self.localIDStack[-1])
+        newVar = Variable(var.lineNumber,
+                          var.name, 
+                          var.id, 
+                          self.localIDStack[-1], 
+                          self.current_fdepth(), 
+                          0)
         self.localIDStack[-1] += 1
         self.stack[-1][name] = newVar  
         return newVar
@@ -89,7 +97,12 @@ def resolve(program: AST, scopes : ResolverScopes = None):
             # Getting the resolved variable
             referencingVariable = scopes.getVariable(name, lineNumber)
             # Setting the exact line number of the variable
-            resolvedVariable = Variable(lineNumber, name, referencingVariable.id, referencingVariable.localID)
+            resolvedVariable = Variable(lineNumber, 
+                                        name, 
+                                        referencingVariable.id, 
+                                        referencingVariable.localID,
+                                        referencingVariable.fdepth,
+                                        scopes.current_fdepth()-referencingVariable.fdepth)
             return resolvedVariable
         
         case Declare(lineNumber, var, value, dtype, isConst):
@@ -108,7 +121,7 @@ def resolve(program: AST, scopes : ResolverScopes = None):
             # Resolving the statements
             scopes.beginScope()
             # Declaring the this variable
-            scopes.declareVariable("this", Variable(lineNumber, "this", thisID, 0))
+            scopes.declareVariable("this", Variable(lineNumber, "this", thisID, None, None, None))
             for methodName in stmts:
                 
                 stmts[methodName] = resolve(stmts[methodName], scopes)
@@ -119,14 +132,16 @@ def resolve(program: AST, scopes : ResolverScopes = None):
             # Declaring the function
             newVar = scopes.declareFun(var.name, var, FnObject(function_type, return_type, params_type, params, body))
             scopes.beginScope()
+            scopes.beginFun()
             # Declaring the parameters
-            for param in params:
-                param = scopes.declareVariable(param.name, param)
+            for i in range(len(params)):
+                params[i] = scopes.declareVariable(params[i].name, params[i])
             for i in range(len(params_type)):
                 if ((not isinstance(params_type[i], type)) and isinstance(params_type[i], instanceType)):
                     params_type[i] = instanceType(scopes.getVariable(params_type[i].name.name, lineNumber))
             # Resolving the body
             resolvedBody = resolve(body, scopes)
+            scopes.endFun()
             scopes.endScope()
             return DeclareFun(lineNumber, newVar, return_type, params_type, params, resolvedBody, function_type)
         
@@ -192,7 +207,7 @@ def resolve(program: AST, scopes : ResolverScopes = None):
         
         case This(lineNumber, id):
             referencingVariable = scopes.getVariable("this", lineNumber)
-            resolvedThis = This(lineNumber, referencingVariable.id)
+            resolvedThis = This(lineNumber, referencingVariable.id, None, None, None)
             return resolvedThis
 
         case PRINT(lineNumber, print_stmts, sep,end):

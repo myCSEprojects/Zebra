@@ -6,7 +6,8 @@ import pprint
 from error import *
 from resolver import *
 import time 
-from sim_BC import VM, codegen
+from codegen import codegen
+from VM import VM
 try:
     import readline
 except:

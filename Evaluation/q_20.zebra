@@ -1,0 +1,21 @@
+var array(int) a = array(int){1,2,-3,4,-5,6};
+var int sum = 0;
+var int ans = 0;
+var int min=a[0];
+for(var int i=0;i<length(a);i=i+1){
+    if(a[i]<min){
+        min=a[i];
+    }
+}
+ans=min-1;
+for(var int i=0; i<length(a); i=i+1)
+{
+    sum=sum+a[i];
+    if(sum>ans){
+        ans=sum;
+    }
+    if(sum<0){
+        sum=0;
+    }
+}
+zout(ans);

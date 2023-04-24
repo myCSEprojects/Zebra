@@ -1,0 +1,16 @@
+var int w = 20;
+var int h = 20;
+
+func int fact(int x){
+    if (x == 1 || x == 0){
+        return 1;
+    }
+    else{
+        return fact(x-1) * x;
+    }
+}
+
+var int n = fact(w + h);
+
+var int d = fact(w) * fact(h);
+zout(n/d);

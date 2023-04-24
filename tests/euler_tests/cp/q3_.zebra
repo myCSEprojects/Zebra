@@ -1,0 +1,30 @@
+var int num1 = 8;
+var int num2 = 9;
+
+var int min_number = num1;
+
+if (num2<num1){
+    min_number = num2;
+}
+
+var int flag = 0;
+var int gcd = 1;
+
+if (min_number==0){
+    gcd = num1 + num2 - min_number;
+    zout("GCD is : ", gcd);
+}
+
+else{
+    for (var int i=min_number; i>0; i=i-1){
+        if (flag == 0){
+            if (num1%i==0 && num2%i==0){
+                flag = 1;
+                gcd = i;
+            }
+        }
+    }
+    zout("GCD is : ", gcd);
+}
+
+

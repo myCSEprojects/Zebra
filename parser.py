@@ -275,7 +275,7 @@ class Parser:
                     return [Float]
                 case Keyword(lineNumber, "string"):
                     self.lexer.advance()
-                    return [String]
+                    return [Str]
                 case Keyword(lineNumber, "boolean"):
                     self.lexer.advance()
                     return [Bool]

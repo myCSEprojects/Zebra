@@ -1,0 +1,17 @@
+@ Author: Sriman
+
+func array(int) solve(array(int) arr, int target){
+    var int n = length(arr);
+    for(var int i = 0; i < n; i = i + 1){
+        for(var int j = i + 1; j < n; j = j + 1){
+            if (arr[i] + arr[j] == target){
+                return array(int){arr[i], arr[j]};
+            }
+        }
+    }
+    return array(int){};
+}
+
+var array(int) a = array(int){1,2,3,4,5};
+
+zout(solve(a, 1));

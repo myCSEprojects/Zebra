@@ -1,0 +1,21 @@
+@ Author: Sriman
+
+func boolean isPalindrome(string s){
+    var int i = 0;
+    var int j = length(s)-1;
+    while(i < j){
+        if (s[i] != s[j]){
+            return false;
+        }
+        i = i + 1;
+        j = j - 1;
+    }
+    return true;
+}
+var string in = "palglapa";
+if (isPalindrome(in)){
+    zout("Palindrome");
+}
+else{
+    zout("Not Palindrome");
+}

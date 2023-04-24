@@ -1,0 +1,13 @@
+@ Author: Sriman
+
+func int sum(array(int) arr){
+    var int s = 0;
+    var int n = length(arr);
+    for(var int i = 0; i <n; i = i + 1){
+        s = s + arr[i];
+    }
+    return s;
+}
+
+var array(int) a = array(int){1,2,3,4};
+zout(sum(a));

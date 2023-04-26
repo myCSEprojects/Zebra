@@ -40,8 +40,6 @@ def get_AST_type(tk: Token):
             return Bool(val)
         case String(lineNumber, val):
             return Str(val)
-        case Identifier(lineNumber, val):
-            return Variable(val)
         case _:
             return nil()
 
@@ -181,7 +179,7 @@ class Parser:
         if not isinstance(l, Identifier):
             ParseError(self, f"Expected an identifier", l.lineNumber)
         self.lexer.advance()
-        var = Variable(l.lineNumber, l.val, generate_id(), 0)
+        var = Variable(l.lineNumber, l.val, generate_id(), None, None, None)
         self.lexer.match(Operator(0,")"))
         self.lexer.match(Operator(0,";"))
         return array_remove(lineNumber, index, var)
@@ -203,7 +201,7 @@ class Parser:
         self.lexer.advance()
         self.lexer.match(Operator(0,")"))
         self.lexer.match(Operator(0,";"))
-        var = Variable(l.lineNumber, l.val, generate_id(), 0)
+        var = Variable(l.lineNumber, l.val, generate_id(), None, None, None)
         return array_pop(l.lineNumber, var)
     
     def parse_insert(self):
@@ -275,7 +273,7 @@ class Parser:
                     return [Float]
                 case Keyword(lineNumber, "string"):
                     self.lexer.advance()
-                    return [String]
+                    return [Str]
                 case Keyword(lineNumber, "boolean"):
                     self.lexer.advance()
                     return [Bool]
@@ -298,7 +296,7 @@ class Parser:
             case Identifier(lineNumber, name):
                 i = self.lexer.peek_token()
                 self.lexer.advance()
-                return Variable(lineNumber, name, generate_id(), 0)
+                return Variable(lineNumber, name, generate_id(), None, None, None)
                 
             case Keyword(lineNumber, "slice"):
                 self.lexer.advance()
@@ -310,7 +308,7 @@ class Parser:
             
             case Keyword(lineNumber, "this"):
                 self.lexer.advance()
-                return This(lineNumber, None)
+                return This(lineNumber, None, None, None, None)
 
             case Keyword(lineNumber,"index"):
                 self.lexer.advance()
@@ -539,7 +537,7 @@ class Parser:
         
         # Generating a Variable for the function
         f = self.lexer.peek_token()
-        func = Variable(f.lineNumber, f.val, generate_id(), 0)
+        func = Variable(f.lineNumber, f.val, generate_id(), None, None, None)
         self.lexer.advance()
 
         # Checking for the "("
@@ -569,7 +567,7 @@ class Parser:
             # Obtaining the parameter name and appending to the params array
             iden = self.lexer.peek_token()
             self.lexer.advance()
-            params.append(Variable(iden.lineNumber, iden.val, generate_id(), 0))
+            params.append(Variable(iden.lineNumber, iden.val, generate_id(), None, None, None))
 
             # Checking for the "," if there are more parameters
             if self.lexer.peek_token().val == ',':
@@ -769,7 +767,7 @@ class Parser:
         iden = self.lexer.peek_token()
         if (not isinstance(iden, Identifier)):
             ParseError(self, "Expected Identifier.", iden.lineNumber)
-        var = Variable(iden.lineNumber, iden.val, generate_id(), 0)
+        var = Variable(iden.lineNumber, iden.val, generate_id(), None, None, None)
         self.lexer.advance()
         if self.lexer.peek_token().val == "=":
             self.lexer.advance()
@@ -787,7 +785,7 @@ class Parser:
             ParseError(self, "Expected Identifier.", iden.lineNumber)
         # Adding the class name to the classList
         classList.append(iden.val)
-        var = Variable(iden.lineNumber, iden.val, generate_id(), 0)
+        var = Variable(iden.lineNumber, iden.val, generate_id(), None, None, None)
         self.lexer.advance()
         self.lexer.match(Operator(0, "{"))
         stmts={}

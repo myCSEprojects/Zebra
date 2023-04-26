@@ -34,7 +34,7 @@ class instanceType:
     def __repr__(self):
         return f"InstanceType{self.name}"
 
-@dataclass(frozen=True)
+@dataclass
 class Variable():
     '''
     Variable class containing the name of the variable
@@ -42,7 +42,12 @@ class Variable():
     lineNumber: int
     name: str
     id: int
-    localID: int
+    localID: int        # ID of the variable in the current frame
+    fdepth: int         # Frame depth of the variable
+    staticJumps: int    # Number of static jumps to be made to reach the variable
+
+    def __hash__(self):
+        return hash(self.id)
 
     def __repr__(self):
         return f"{self.name}::{self.id}"
@@ -86,7 +91,7 @@ class Bool():
         else:
             return Bool(True)
     def __repr__ (self):
-       return f"{self.value}"
+       return "true" if self.value else "false"
 
 @dataclass
 class Str() :
@@ -340,6 +345,9 @@ class This(metadata):
     This class to get the current instance
     '''
     id: int
+    localId: int
+    fdepth: int
+    staticJumps: int
 
 @dataclass
 class array_pop(metadata):
@@ -507,8 +515,8 @@ def evaluate(program: AST, scopes: Scopes = None):
         case InstanceObject() as obj:
             return obj
         
-        case This(lineNumber, id):
-            return scopes.getVariable(Variable(lineNumber, "this", id, 0))
+        case This(lineNumber, id, localID, fdepth, staticJumps):
+            return scopes.getVariable(Variable(lineNumber, "this", id, localID, fdepth, staticJumps))
         
         case zArray(dtype, value) as arr:
             for i in range(len(arr.elements)):
@@ -791,7 +799,7 @@ def evaluate(program: AST, scopes: Scopes = None):
                     scopes.beginScope()
 
                     # Declaring the this variable
-                    scopes.declareVariable(Variable(lineNumber, "this", obj.zClass.thisID, 0), obj, instanceType(obj.zClass), False)
+                    scopes.declareVariable(Variable(lineNumber, "this", obj.zClass.thisID, None, None, None), obj, instanceType(obj.zClass), False)
 
                     # Declaring the function
                     evaluate(field, scopes)

@@ -1,0 +1,26 @@
+var array(string) s = array(string){"manish","sriman","rajesh","karthi","sivasa"};
+var int max=0;
+var string ans1;
+var string ans2;
+for(var int i=0;i<length(s);i=i+1)
+{
+    for(var int j=i+1;j<length(s);j=j+1)
+    {
+        var int dis=0;
+        for(var int k=0;k<length(s[0]);k=k+1)
+        {
+            if(s[i][k]!=s[j][k])
+            {
+                dis=dis+1;
+            }
+        }
+        if(dis>max)
+        {
+            max=dis;
+            ans1=s[i];
+            ans2=s[j];
+        }
+    }
+}
+zout(max);
+zout(ans1, ans2);

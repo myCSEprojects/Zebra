@@ -1,0 +1,37 @@
+@ Author: Sriman
+
+@@ using classes
+@ class CongruentialGenerator{
+@     var int m = 1000000;
+@     var int a = 99099;
+@     var int c = 69;
+@     var int Xo;
+@     func int init(int Xo){
+@         this.Xo = (Xo)%(this.m);
+@         return 1;
+@     }
+@     func int generate(){
+@         this.Xo = ((this.a)*(this.Xo) + (this.c))%(this.m);
+@         return this.Xo;
+@     }
+@ }
+@ 
+@ var CongruentialGenerator cg = CongruentialGenerator(1);
+@ zout(cg.generate());
+@ zout(cg.generate());
+@ zout(cg.generate());
+
+@ Without classes
+var int m = 1000000;
+var int a = 99099;
+var int c = 69;
+var int X = 1;
+
+func int generate(){
+    X = ((a)*(X) + (c))%(m);
+    return X;
+}
+
+zout(generate());
+zout(generate());
+zout(generate());

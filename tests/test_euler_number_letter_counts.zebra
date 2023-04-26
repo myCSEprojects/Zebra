@@ -1,0 +1,82 @@
+var array(string) units = array(string){};
+var array(string) teens = array(string){};
+var array(string) tens  = array(string){};
+
+var int a = 10;
+var int b = 8;
+
+for(var int i=0; i<a; i=i+1) {
+    units[0] = "zero";
+    units[1] = "one";
+    units[2] = "two";
+    units[3] = "three";
+    units[4] = "four";
+    units[5] = "five";
+    units[6] = "six";
+    units[7] = "seven";
+    units[8] = "eight";
+    units[9] = "nine";
+}
+for(var int i=0; i<a; i=i+1) {
+    teens[0] = "ten";
+    teens[1] = "eleven";
+    teens[2] = "twelve";
+    teens[3] = "thirteen";
+    teens[4] = "fourteen";
+    teens[5] = "fifteen";
+    teens[6] = "sixteen";
+    teens[7] = "seventeen";
+    teens[8] = "eighteen";
+    teens[9] = "nineteen";
+}
+
+for(var int i=0; i<b; i=i+1) {
+    tens[0] = "twenty";
+    tens[1] = "thirty";
+    tens[2] = "forty";
+    tens[3] = "fifty";
+    tens[4] = "sixty";
+    tens[5] = "seventy";
+    tens[6] = "eighty";
+    tens[7] = "ninety";
+}
+
+var int ii = 0;
+
+func int countletters(int n) {
+    if (n < 10) {
+        return length(units[n]);
+    } else if (n < 20) {
+        return length(teens[n - 10]);
+    } else if (n < 100) {
+        ii = n/10 - 2;
+        var int count = length(tens[ii]);
+        if (n % 10 != 0) {
+            count = count + length(units[n % 10]);
+        }
+        return count;
+    } else if (n < 1000) {
+        ii = n/100;
+        var int count = length(units[ii]) + length("hundred");
+        if (n % 100 != 0) {
+            count = count + length("and") + countletters(n % 100);
+        }
+        return count;
+    } else if (n == 1000) {
+        return length("onethousand");
+    } else {
+        return 0;
+    }
+}
+
+func int Numberlettercounts() {
+    var int sum = 0;
+    for (var int i = 1; i <= 1000; i=i+1) {
+        sum = sum + countletters(i);
+    }
+    return sum;
+}
+
+var int answer = Numberlettercounts();
+
+zout(answer);

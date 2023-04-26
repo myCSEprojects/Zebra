@@ -1,0 +1,31 @@
+func int distinctpowers() {
+    var int maxterm = 1000000;
+
+    var array(boolean) distinctterms = array(boolean){};
+    for(var int i=0; i<maxterm+1; i=i+1){
+        append(false,distinctterms);
+    }
+
+    for (var int a = 2; a <= 5; a=a+1) {
+        for (var int b = 2; b <= 5; b=b+1) {
+            var int term = a^b;
+            if (term <= maxterm) {
+                distinctterms[term] = true;
+            }
+        }
+    }
+
+    var int count = 0;
+    for (var int i = 2; i <= maxterm; i=i+1) {
+        if (distinctterms[i]) {
+            count = count+1;
+        }
+    }
+
+    return count;
+}
+
+var int answer = distinctpowers();
+
+zout(answer);
+

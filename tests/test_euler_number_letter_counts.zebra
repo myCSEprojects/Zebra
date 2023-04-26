@@ -1,6 +1,6 @@
-var array(string) units = array(string){};
-var array(string) teens = array(string){};
-var array(string) tens  = array(string){};
+var array(string) units = array(string){"init","init","init","init","init","init","init","init","init","init"};
+var array(string) teens = array(string){"init","init","init","init","init","init","init","init","init","init"};
+var array(string) tens  = array(string){"init","init","init","init","init","init","init","init"};
 
 var int a = 10;
 var int b = 8;
